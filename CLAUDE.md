@@ -18,6 +18,9 @@ Tauri + React + TypeScript + Tailwind CSSで構築されたMac用デスクトッ
 - ✅ レスポンシブデザイン
 - ✅ ナビゲーション機能
 - ✅ 重複PR自動除外機能
+- ✅ スクロール位置の自動保持（ScrollRestoration）
+- ✅ PR間の前後移動ボタン
+- ✅ キーボードショートカット（←/h: 前のPR、→/l: 次のPR、Esc/g: 一覧へ）
 
 ## 開発・ビルド
 ```bash
