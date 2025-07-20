@@ -24,7 +24,7 @@ export function LoginPage() {
         query: GET_VIEWER,
         context: {
           headers: {
-            authorization: `token ${token}`,
+            authorization: `bearer ${token}`,
           },
         },
         fetchPolicy: 'network-only', // キャッシュを使わずネットワークから取得
@@ -35,8 +35,10 @@ export function LoginPage() {
         setUser(data.viewer);
         navigate('/');
       }
-    } catch (err) {
-      setError('Invalid token. Please check your GitHub personal access token.');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      const errorMessage = err?.message || 'Invalid token. Please check your GitHub personal access token.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

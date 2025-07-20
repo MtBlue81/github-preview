@@ -1,4 +1,4 @@
-import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { useAuthStore } from '../stores/authStore';
 
@@ -11,12 +11,26 @@ const authLink = setContext((_, { headers }) => {
   return {
     headers: {
       ...headers,
-      authorization: token ? `token ${token}` : '',
+      authorization: token ? `bearer ${token}` : '',
     },
   };
 });
 
+// デバッグ用のロギングリンク
+const loggingLink = new ApolloLink((operation, forward) => {
+  console.log('GraphQL Request:', {
+    operationName: operation.operationName,
+    variables: operation.variables,
+    headers: operation.getContext().headers,
+  });
+  
+  return forward(operation).map(response => {
+    console.log('GraphQL Response:', response);
+    return response;
+  });
+});
+
 export const githubClient = new ApolloClient({
-  link: authLink.concat(httpLink),
+  link: ApolloLink.from([loggingLink, authLink, httpLink]),
   cache: new InMemoryCache(),
 });
