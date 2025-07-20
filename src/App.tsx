@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, ScrollRestoration } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client';
 import { LoginPage } from './pages/LoginPage';
 import { PullRequestsPage } from './pages/PullRequestsPage';
@@ -16,6 +16,7 @@ function App() {
   return (
     <ApolloProvider client={githubClient}>
       <Router>
+        <ScrollRestoration />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route

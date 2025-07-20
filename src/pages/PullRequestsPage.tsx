@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_PULL_REQUESTS } from '../lib/queries';
 import { PullRequest } from '../types/github';
 import { useAuthStore } from '../stores/authStore';
+import { useNavigationStore } from '../stores/navigationStore';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -14,6 +16,7 @@ interface PRGroup {
 
 export function PullRequestsPage() {
   const { user } = useAuthStore();
+  const { setAllPullRequests, setCurrentPR } = useNavigationStore();
   
   // 複数のクエリを並列実行
   const authorQuery = useQuery(GET_PULL_REQUESTS, {
@@ -93,12 +96,23 @@ export function PullRequestsPage() {
   ];
 
   const totalPRs = groups.reduce((sum, group) => sum + group.pullRequests.length, 0);
+  
+  // 全PRのフラットなリストを作成
+  const allPRs = groups.flatMap(group => group.pullRequests);
+  
+  // PRリストが更新されたらナビゲーションストアに保存
+  useEffect(() => {
+    if (allPRs.length > 0) {
+      setAllPullRequests(allPRs);
+    }
+  }, [allPRs, setAllPullRequests]);
 
   const renderPRItem = (pr: PullRequest) => (
     <Link
       key={pr.id}
       to={`/pr/${pr.repository.owner.login}/${pr.repository.name}/${pr.number}`}
       className="block hover:bg-gray-50 px-4 py-3 border-b last:border-b-0"
+      onClick={() => setCurrentPR(pr)}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
