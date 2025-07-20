@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, ScrollRestoration } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client';
 import { LoginPage } from './pages/LoginPage';
 import { PullRequestsPage } from './pages/PullRequestsPage';
@@ -7,36 +6,36 @@ import { PullRequestDetailPage } from './pages/PullRequestDetailPage';
 import { githubClient } from './lib/github';
 import { useAuthStore } from './stores/authStore';
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+function PrivateRoute() {
   const { token } = useAuthStore();
-  return token ? <>{children}</> : <Navigate to="/login" />;
+  return token ? <Outlet /> : <Navigate to="/login" />;
 }
+
+const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/",
+    element: <PrivateRoute />,
+    children: [
+      {
+        index: true,
+        element: <PullRequestsPage />,
+      },
+      {
+        path: "pr/:owner/:repo/:number",
+        element: <PullRequestDetailPage />,
+      },
+    ],
+  },
+]);
 
 function App() {
   return (
     <ApolloProvider client={githubClient}>
-      <Router>
-        <ScrollRestoration />
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <PullRequestsPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/pr/:owner/:repo/:number"
-            element={
-              <PrivateRoute>
-                <PullRequestDetailPage />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
-      </Router>
+      <RouterProvider router={router} />
     </ApolloProvider>
   );
 }
