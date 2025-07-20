@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { githubClient } from '../lib/github';
+import { createAuthTestClient } from '../lib/github';
 import { GET_VIEWER } from '../lib/queries';
 
 export function LoginPage() {
@@ -17,17 +17,12 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      // キャッシュをクリアして古いデータを削除
-      await githubClient.clearStore();
+      // テスト用のクライアントを作成
+      const testClient = createAuthTestClient(token);
       
-      const { data } = await githubClient.query({
+      const { data } = await testClient.query({
         query: GET_VIEWER,
-        context: {
-          headers: {
-            authorization: `bearer ${token}`,
-          },
-        },
-        fetchPolicy: 'network-only', // キャッシュを使わずネットワークから取得
+        fetchPolicy: 'network-only',
       });
 
       if (data.viewer) {

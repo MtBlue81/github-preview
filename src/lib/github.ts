@@ -34,3 +34,20 @@ export const githubClient = new ApolloClient({
   link: ApolloLink.from([loggingLink, authLink, httpLink]),
   cache: new InMemoryCache(),
 });
+
+// ログイン検証用のクライアント作成関数
+export const createAuthTestClient = (token: string) => {
+  const testAuthLink = setContext((_, { headers }) => {
+    return {
+      headers: {
+        ...headers,
+        authorization: `bearer ${token}`,
+      },
+    };
+  });
+  
+  return new ApolloClient({
+    link: ApolloLink.from([loggingLink, testAuthLink, httpLink]),
+    cache: new InMemoryCache(),
+  });
+};
