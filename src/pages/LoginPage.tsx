@@ -17,13 +17,17 @@ export function LoginPage() {
     setLoading(true);
 
     try {
+      // キャッシュをクリアして古いデータを削除
+      await githubClient.clearStore();
+      
       const { data } = await githubClient.query({
         query: GET_VIEWER,
         context: {
           headers: {
-            authorization: `Bearer ${token}`,
+            authorization: `token ${token}`,
           },
         },
+        fetchPolicy: 'network-only', // キャッシュを使わずネットワークから取得
       });
 
       if (data.viewer) {
