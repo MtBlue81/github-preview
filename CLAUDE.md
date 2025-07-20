@@ -12,11 +12,12 @@ Tauri + React + TypeScript + Tailwind CSSで構築されたMac用デスクトッ
 
 ## 実装済み機能
 - ✅ GitHub Personal Access Token認証
-- ✅ PR一覧表示（作成者、アサイン、メンション、レビュー依頼でフィルタリング）
+- ✅ PR統合ビュー（作成したPR、レビュー依頼、アサイン、メンションを一画面に表示）
 - ✅ PR詳細表示（説明、ファイル変更リスト、コメント・レビュー表示）
 - ✅ 自動更新機能（PR一覧: 1分間隔、PR詳細: 30秒間隔）
 - ✅ レスポンシブデザイン
 - ✅ ナビゲーション機能
+- ✅ 重複PR自動除外機能
 
 ## 開発・ビルド
 ```bash
@@ -33,7 +34,7 @@ npm run tauri dev
 ## 使用方法
 1. [GitHub Settings](https://github.com/settings/tokens/new?scopes=repo,read:user) でPersonal Access Tokenを作成
 2. アプリ起動後、トークンでログイン
-3. PR一覧からフィルター選択
+3. 自分に関係するすべてのPRが4つのカテゴリで表示される
 4. PRクリックで詳細画面へ
 
 ## 今後の実装予定
