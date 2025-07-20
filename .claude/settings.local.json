@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(mv:*)",
+      "Bash(true)",
+      "Bash(rmdir:*)",
+      "Bash(npm install)",
+      "Bash(npm view:*)",
+      "Bash(rm:*)",
+      "Bash(npm run tauri:*)",
+      "Bash(npm run build:*)"
+    ],
+    "deny": []
+  }
+}
