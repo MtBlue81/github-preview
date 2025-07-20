@@ -10,7 +10,9 @@
       "Bash(rm:*)",
       "Bash(npm run tauri:*)",
       "Bash(npm run build:*)",
-      "WebFetch(domain:docs.github.com)"
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:reactrouter.com)",
+      "WebFetch(domain:api.reactrouter.com)"
     ],
     "deny": []
   }

@@ -3,6 +3,7 @@ import { ApolloProvider } from '@apollo/client';
 import { LoginPage } from './pages/LoginPage';
 import { PullRequestsPage } from './pages/PullRequestsPage';
 import { PullRequestDetailPage } from './pages/PullRequestDetailPage';
+import { RootLayout } from './components/RootLayout';
 import { githubClient } from './lib/github';
 import { useAuthStore } from './stores/authStore';
 
@@ -13,20 +14,26 @@ function PrivateRoute() {
 
 const router = createBrowserRouter([
   {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
     path: "/",
-    element: <PrivateRoute />,
+    element: <RootLayout />,
     children: [
       {
-        index: true,
-        element: <PullRequestsPage />,
+        path: "login",
+        element: <LoginPage />,
       },
       {
-        path: "pr/:owner/:repo/:number",
-        element: <PullRequestDetailPage />,
+        path: "/",
+        element: <PrivateRoute />,
+        children: [
+          {
+            index: true,
+            element: <PullRequestsPage />,
+          },
+          {
+            path: "pr/:owner/:repo/:number",
+            element: <PullRequestDetailPage />,
+          },
+        ],
       },
     ],
   },
