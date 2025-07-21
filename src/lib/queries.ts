@@ -55,6 +55,180 @@ export const GET_PULL_REQUESTS = gql`
   }
 `;
 
+export const GET_ALL_PULL_REQUESTS = gql`
+  query GetAllPullRequests(
+    $authorQuery: String!
+    $assigneeQuery: String!
+    $mentionsQuery: String!
+    $reviewRequestedQuery: String!
+  ) {
+    authored: search(query: $authorQuery, type: ISSUE, first: 50) {
+      nodes {
+        ... on PullRequest {
+          id
+          number
+          title
+          url
+          state
+          createdAt
+          updatedAt
+          isDraft
+          author {
+            login
+            avatarUrl
+          }
+          repository {
+            name
+            owner {
+              login
+            }
+          }
+          reviewDecision
+          commits {
+            totalCount
+          }
+          comments {
+            totalCount
+          }
+          reviews {
+            totalCount
+          }
+          labels(first: 10) {
+            nodes {
+              name
+              color
+            }
+          }
+        }
+      }
+    }
+    assigned: search(query: $assigneeQuery, type: ISSUE, first: 50) {
+      nodes {
+        ... on PullRequest {
+          id
+          number
+          title
+          url
+          state
+          createdAt
+          updatedAt
+          isDraft
+          author {
+            login
+            avatarUrl
+          }
+          repository {
+            name
+            owner {
+              login
+            }
+          }
+          reviewDecision
+          commits {
+            totalCount
+          }
+          comments {
+            totalCount
+          }
+          reviews {
+            totalCount
+          }
+          labels(first: 10) {
+            nodes {
+              name
+              color
+            }
+          }
+        }
+      }
+    }
+    mentioned: search(query: $mentionsQuery, type: ISSUE, first: 50) {
+      nodes {
+        ... on PullRequest {
+          id
+          number
+          title
+          url
+          state
+          createdAt
+          updatedAt
+          isDraft
+          author {
+            login
+            avatarUrl
+          }
+          repository {
+            name
+            owner {
+              login
+            }
+          }
+          reviewDecision
+          commits {
+            totalCount
+          }
+          comments {
+            totalCount
+          }
+          reviews {
+            totalCount
+          }
+          labels(first: 10) {
+            nodes {
+              name
+              color
+            }
+          }
+        }
+      }
+    }
+    reviewRequested: search(
+      query: $reviewRequestedQuery
+      type: ISSUE
+      first: 50
+    ) {
+      nodes {
+        ... on PullRequest {
+          id
+          number
+          title
+          url
+          state
+          createdAt
+          updatedAt
+          isDraft
+          author {
+            login
+            avatarUrl
+          }
+          repository {
+            name
+            owner {
+              login
+            }
+          }
+          reviewDecision
+          commits {
+            totalCount
+          }
+          comments {
+            totalCount
+          }
+          reviews {
+            totalCount
+          }
+          labels(first: 10) {
+            nodes {
+              name
+              color
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 export const GET_PULL_REQUEST_DETAIL = gql`
   query GetPullRequestDetail($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {

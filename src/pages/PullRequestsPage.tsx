@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useQuery } from '@apollo/client';
-import { GET_PULL_REQUESTS } from '../lib/queries';
+import { GET_ALL_PULL_REQUESTS } from '../lib/queries';
 import { PullRequest } from '../types/github';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigationStore } from '../stores/navigationStore';
@@ -25,45 +25,19 @@ export function PullRequestsPage() {
   const { isIgnored, addIgnoredPR, ignoredPRIds } = useIgnoreStore();
   const { isUnread, markAsRead } = useReadStatusStore();
 
-  // 複数のクエリを並列実行
-  const authorQuery = useQuery(GET_PULL_REQUESTS, {
+  // 統合クエリで一度にすべてのPRを取得
+  const allPullRequestsQuery = useQuery(GET_ALL_PULL_REQUESTS, {
     variables: {
-      query: `is:pr is:open author:${user?.login} sort:updated-desc`,
+      authorQuery: `is:pr is:open author:${user?.login} sort:updated-desc`,
+      assigneeQuery: `is:pr is:open assignee:${user?.login} sort:updated-desc`,
+      mentionsQuery: `is:pr is:open mentions:${user?.login} sort:updated-desc`,
+      reviewRequestedQuery: `is:pr is:open review-requested:${user?.login} sort:updated-desc`,
     },
     pollInterval: 60000,
   });
 
-  const assigneeQuery = useQuery(GET_PULL_REQUESTS, {
-    variables: {
-      query: `is:pr is:open assignee:${user?.login} sort:updated-desc`,
-    },
-    pollInterval: 60000,
-  });
-
-  const mentionsQuery = useQuery(GET_PULL_REQUESTS, {
-    variables: {
-      query: `is:pr is:open mentions:${user?.login} sort:updated-desc`,
-    },
-    pollInterval: 60000,
-  });
-
-  const reviewRequestedQuery = useQuery(GET_PULL_REQUESTS, {
-    variables: {
-      query: `is:pr is:open review-requested:${user?.login} sort:updated-desc`,
-    },
-    pollInterval: 60000,
-  });
-
-  const loading =
-    authorQuery.loading ||
-    assigneeQuery.loading ||
-    mentionsQuery.loading ||
-    reviewRequestedQuery.loading;
-  const error =
-    authorQuery.error ||
-    assigneeQuery.error ||
-    mentionsQuery.error ||
-    reviewRequestedQuery.error;
+  const loading = allPullRequestsQuery.loading;
+  const error = allPullRequestsQuery.error;
 
   // PRをIDでユニークにする関数（無視されたPRも除外）
   const getUniquePRs = useCallback(
@@ -87,44 +61,40 @@ export function PullRequestsPage() {
         title: 'メンションされたPR',
         icon: '💬',
         pullRequests: getUniquePRs(
-          mentionsQuery.data?.search?.nodes?.filter(Boolean) || []
+          allPullRequestsQuery.data?.mentioned?.nodes?.filter(Boolean) || []
         ),
       },
       {
         title: 'アサインされたPR',
         icon: '📌',
         pullRequests: getUniquePRs(
-          assigneeQuery.data?.search?.nodes?.filter(Boolean) || []
+          allPullRequestsQuery.data?.assigned?.nodes?.filter(Boolean) || []
         ),
       },
       {
         title: 'レビュー依頼',
         icon: '👀',
         pullRequests: getUniquePRs(
-          reviewRequestedQuery.data?.search?.nodes?.filter(Boolean) || []
+          allPullRequestsQuery.data?.reviewRequested?.nodes?.filter(Boolean) ||
+            []
         ),
       },
       {
         title: '作成したPR',
         icon: '✏️',
         pullRequests: getUniquePRs(
-          authorQuery.data?.search?.nodes?.filter(Boolean) || []
+          allPullRequestsQuery.data?.authored?.nodes?.filter(Boolean) || []
         ),
       },
     ],
     [
       getUniquePRs,
-      authorQuery.data?.search?.nodes,
-      reviewRequestedQuery.data?.search?.nodes,
-      assigneeQuery.data?.search?.nodes,
-      mentionsQuery.data?.search?.nodes,
+      allPullRequestsQuery.data?.authored?.nodes,
+      allPullRequestsQuery.data?.reviewRequested?.nodes,
+      allPullRequestsQuery.data?.assigned?.nodes,
+      allPullRequestsQuery.data?.mentioned?.nodes,
       ignoredPRIds,
     ]
-  );
-
-  const totalPRs = groups.reduce(
-    (sum, group) => sum + group.pullRequests.length,
-    0
   );
 
   // 全PRのフラットなリストを作成（useMemoで最適化）
