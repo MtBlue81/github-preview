@@ -24,22 +24,30 @@ export function PullRequestsPage() {
 
   // 複数のクエリを並列実行
   const authorQuery = useQuery(GET_PULL_REQUESTS, {
-    variables: { query: `is:pr is:open author:${user?.login}` },
+    variables: {
+      query: `is:pr is:open author:${user?.login} sort:updated-desc`,
+    },
     pollInterval: 60000,
   });
 
   const assigneeQuery = useQuery(GET_PULL_REQUESTS, {
-    variables: { query: `is:pr is:open assignee:${user?.login}` },
+    variables: {
+      query: `is:pr is:open assignee:${user?.login} sort:updated-desc`,
+    },
     pollInterval: 60000,
   });
 
   const mentionsQuery = useQuery(GET_PULL_REQUESTS, {
-    variables: { query: `is:pr is:open mentions:${user?.login}` },
+    variables: {
+      query: `is:pr is:open mentions:${user?.login} sort:updated-desc`,
+    },
     pollInterval: 60000,
   });
 
   const reviewRequestedQuery = useQuery(GET_PULL_REQUESTS, {
-    variables: { query: `is:pr is:open review-requested:${user?.login}` },
+    variables: {
+      query: `is:pr is:open review-requested:${user?.login} sort:updated-desc`,
+    },
     pollInterval: 60000,
   });
 
@@ -73,17 +81,10 @@ export function PullRequestsPage() {
   const groups: PRGroup[] = useMemo(
     () => [
       {
-        title: '作成したPR',
-        icon: '✏️',
+        title: 'メンションされたPR',
+        icon: '💬',
         pullRequests: getUniquePRs(
-          authorQuery.data?.search?.nodes?.filter(Boolean) || []
-        ),
-      },
-      {
-        title: 'レビュー依頼',
-        icon: '👀',
-        pullRequests: getUniquePRs(
-          reviewRequestedQuery.data?.search?.nodes?.filter(Boolean) || []
+          mentionsQuery.data?.search?.nodes?.filter(Boolean) || []
         ),
       },
       {
@@ -94,10 +95,17 @@ export function PullRequestsPage() {
         ),
       },
       {
-        title: 'メンションされたPR',
-        icon: '💬',
+        title: 'レビュー依頼',
+        icon: '👀',
         pullRequests: getUniquePRs(
-          mentionsQuery.data?.search?.nodes?.filter(Boolean) || []
+          reviewRequestedQuery.data?.search?.nodes?.filter(Boolean) || []
+        ),
+      },
+      {
+        title: '作成したPR',
+        icon: '✏️',
+        pullRequests: getUniquePRs(
+          authorQuery.data?.search?.nodes?.filter(Boolean) || []
         ),
       },
     ],
@@ -129,15 +137,17 @@ export function PullRequestsPage() {
 
   // フォーカス復帰処理
   useEffect(() => {
-    if (lastFocusedPRId) {
-      const element = document.getElementById(`pr-${lastFocusedPRId}`);
+    if (lastFocusedPRId && allPRs.length > 0) {
+      const element = document.querySelector(
+        `#pr-${lastFocusedPRId} > a`
+      ) as HTMLAnchorElement;
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         element.focus();
         clearLastFocusedPR();
       }
     }
-  }, [lastFocusedPRId, clearLastFocusedPR]);
+  }, [lastFocusedPRId, clearLastFocusedPR, allPRs]);
 
   // 早期リターンはすべてのフックの後に配置
   if (loading) {
@@ -171,11 +181,11 @@ export function PullRequestsPage() {
     <div
       key={pr.id}
       id={`pr-${pr.id}`}
-      className='relative group hover:bg-gray-50 focus:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset'
+      className='relative group hover:bg-gray-50 focus:bg-blue-50'
     >
       <Link
         to={`/pr/${pr.repository.owner.login}/${pr.repository.name}/${pr.number}`}
-        className='block px-4 py-3 border-b last:border-b-0'
+        className='block px-4 py-3 border-b last:border-b-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset'
         onClick={() => setCurrentPR(pr)}
       >
         <div className='flex items-start justify-between'>
@@ -248,6 +258,7 @@ export function PullRequestsPage() {
         onClick={e => handleIgnorePR(e, pr)}
         className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded bg-gray-200 hover:bg-red-200 text-gray-600 hover:text-red-700'
         title='このPRを無視する'
+        tabIndex={-1}
       >
         <svg
           className='w-4 h-4'
