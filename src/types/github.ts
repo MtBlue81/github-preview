@@ -70,6 +70,14 @@ export interface CommentNode {
 
 export type ConversationItem = ReviewNode | CommentNode;
 
+export interface RateLimit {
+  limit: number;
+  remaining: number;
+  used: number;
+  cost: number;
+  resetAt: string;
+}
+
 export interface PullRequestDetail
   extends Omit<PullRequest, 'comments' | 'reviews'> {
   body: string;

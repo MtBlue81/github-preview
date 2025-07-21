@@ -165,7 +165,7 @@ export function PullRequestsPage() {
   // 早期リターンはすべてのフックの後に配置
   if (loading) {
     return (
-      <Layout>
+      <Layout loading={loading}>
         <div className='flex items-center justify-center h-screen'>
           <div className='text-lg'>Loading pull requests...</div>
         </div>
@@ -175,7 +175,7 @@ export function PullRequestsPage() {
 
   if (error) {
     return (
-      <Layout>
+      <Layout loading={loading}>
         <div className='flex items-center justify-center h-screen'>
           <div className='text-red-600'>Error: {error.message}</div>
         </div>
@@ -315,7 +315,11 @@ export function PullRequestsPage() {
   };
 
   return (
-    <Layout allPRs={allPRs}>
+    <Layout
+      allPRs={allPRs}
+      rateLimit={allPullRequestsQuery.data?.rateLimit}
+      loading={loading}
+    >
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <div className='mb-6 flex items-center justify-between'>
           <div>

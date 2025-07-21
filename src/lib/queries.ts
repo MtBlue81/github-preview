@@ -62,6 +62,13 @@ export const GET_ALL_PULL_REQUESTS = gql`
     $mentionsQuery: String!
     $reviewRequestedQuery: String!
   ) {
+    rateLimit {
+      limit
+      remaining
+      used
+      cost
+      resetAt
+    }
     authored: search(query: $authorQuery, type: ISSUE, first: 50) {
       nodes {
         ... on PullRequest {
