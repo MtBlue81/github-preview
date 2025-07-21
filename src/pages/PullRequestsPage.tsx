@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_ALL_PULL_REQUESTS } from '../lib/queries';
 import { PullRequest } from '../types/github';
@@ -12,10 +12,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 
-interface PRGroup {
-  title: string;
-  icon: string;
-  pullRequests: PullRequest[];
+interface PRWithCategories extends PullRequest {
+  categories: Array<{ title: string; icon: string }>;
 }
 
 export function PullRequestsPage() {
@@ -23,7 +21,7 @@ export function PullRequestsPage() {
   const { setAllPullRequests, setCurrentPR } = useNavigationStore();
   const { lastFocusedPRId, clearLastFocusedPR } = useFocusStore();
   const { isIgnored, addIgnoredPR, ignoredPRIds } = useIgnoreStore();
-  const { isUnread, markAsRead } = useReadStatusStore();
+  const { isUnread, markAsRead, getUnreadCount } = useReadStatusStore();
 
   // 統合クエリで一度にすべてのPRを取得
   const allPullRequestsQuery = useQuery(GET_ALL_PULL_REQUESTS, {
@@ -39,68 +37,76 @@ export function PullRequestsPage() {
   const loading = allPullRequestsQuery.loading;
   const error = allPullRequestsQuery.error;
 
-  // PRをIDでユニークにする関数（無視されたPRも除外）
-  const getUniquePRs = useCallback(
-    (prs: PullRequest[]): PullRequest[] => {
-      const seen = new Set<string>();
-      return prs.filter(pr => {
-        if (seen.has(pr.id)) return false;
-        // PR IDを owner:repo:number 形式で作成
-        const prKey = `${pr.repository.owner.login}:${pr.repository.name}:${pr.number}`;
-        if (isIgnored(prKey)) return false;
-        seen.add(pr.id);
-        return true;
-      });
-    },
-    [isIgnored]
-  );
+  // PRとカテゴリ情報を統合した配列を作成
+  const allPRsWithCategories = useMemo(() => {
+    const prMap = new Map<string, PRWithCategories>();
 
-  const groups: PRGroup[] = useMemo(
-    () => [
+    // 各カテゴリのPRを処理
+    const categories = [
       {
-        title: 'メンションされたPR',
+        title: 'メンション',
         icon: '💬',
-        pullRequests: getUniquePRs(
-          allPullRequestsQuery.data?.mentioned?.nodes?.filter(Boolean) || []
-        ),
+        prs: allPullRequestsQuery.data?.mentioned?.nodes?.filter(Boolean) || [],
       },
       {
-        title: 'アサインされたPR',
+        title: 'アサイン',
         icon: '📌',
-        pullRequests: getUniquePRs(
-          allPullRequestsQuery.data?.assigned?.nodes?.filter(Boolean) || []
-        ),
+        prs: allPullRequestsQuery.data?.assigned?.nodes?.filter(Boolean) || [],
       },
       {
         title: 'レビュー依頼',
         icon: '👀',
-        pullRequests: getUniquePRs(
+        prs:
           allPullRequestsQuery.data?.reviewRequested?.nodes?.filter(Boolean) ||
-            []
-        ),
+          [],
       },
       {
-        title: '作成したPR',
+        title: '作成',
         icon: '✏️',
-        pullRequests: getUniquePRs(
-          allPullRequestsQuery.data?.authored?.nodes?.filter(Boolean) || []
-        ),
+        prs: allPullRequestsQuery.data?.authored?.nodes?.filter(Boolean) || [],
       },
-    ],
-    [
-      getUniquePRs,
-      allPullRequestsQuery.data?.authored?.nodes,
-      allPullRequestsQuery.data?.reviewRequested?.nodes,
-      allPullRequestsQuery.data?.assigned?.nodes,
-      allPullRequestsQuery.data?.mentioned?.nodes,
-      ignoredPRIds,
-    ]
-  );
+    ];
 
-  // 全PRのフラットなリストを作成（useMemoで最適化）
+    // 各カテゴリのPRをマップに追加
+    categories.forEach(category => {
+      category.prs.forEach((pr: PullRequest) => {
+        const prKey = `${pr.repository.owner.login}:${pr.repository.name}:${pr.number}`;
+        if (isIgnored(prKey)) return;
+
+        if (prMap.has(pr.id)) {
+          // 既存のPRにカテゴリを追加
+          const existingPR = prMap.get(pr.id)!;
+          existingPR.categories.push({
+            title: category.title,
+            icon: category.icon,
+          });
+        } else {
+          // 新しいPRを追加
+          prMap.set(pr.id, {
+            ...pr,
+            categories: [{ title: category.title, icon: category.icon }],
+          });
+        }
+      });
+    });
+
+    // 更新日時でソート（新しい順）
+    return Array.from(prMap.values()).sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }, [
+    allPullRequestsQuery.data?.authored?.nodes,
+    allPullRequestsQuery.data?.reviewRequested?.nodes,
+    allPullRequestsQuery.data?.assigned?.nodes,
+    allPullRequestsQuery.data?.mentioned?.nodes,
+    isIgnored,
+  ]);
+
+  // 全PRのフラットなリストを作成（ナビゲーション用）
   const allPRs = useMemo(() => {
-    return groups.flatMap(group => group.pullRequests);
-  }, [groups]);
+    return allPRsWithCategories;
+  }, [allPRsWithCategories]);
 
   // 以前のPRリストを保持
   const previousPRsRef = useRef<PullRequest[]>([]);
@@ -162,6 +168,10 @@ export function PullRequestsPage() {
     }
   }, [lastFocusedPRId, clearLastFocusedPR, allPRs]);
 
+  const unreadCount = useMemo(() => {
+    return getUnreadCount(allPRs);
+  }, [getUnreadCount, allPRs]);
+
   // 早期リターンはすべてのフックの後に配置
   if (loading) {
     return (
@@ -190,7 +200,7 @@ export function PullRequestsPage() {
     addIgnoredPR(prKey);
   };
 
-  const renderPRItem = (pr: PullRequest) => {
+  const renderPRItem = (pr: PRWithCategories) => {
     const isItemUnread = isUnread(pr.id, pr.updatedAt);
 
     return (
@@ -233,8 +243,21 @@ export function PullRequestsPage() {
                   {pr.title}
                 </h4>
               </div>
-              <div className='mt-1 text-xs text-gray-600'>
-                {pr.repository.owner.login}/{pr.repository.name} #{pr.number}
+              <div className='mt-1 flex items-center gap-2'>
+                <span className='text-xs text-gray-600'>
+                  {pr.repository.owner.login}/{pr.repository.name} #{pr.number}
+                </span>
+                <div className='flex items-center gap-1'>
+                  {pr.categories.map((category, index) => (
+                    <span
+                      key={index}
+                      className='text-sm'
+                      title={category.title}
+                    >
+                      {category.icon}
+                    </span>
+                  ))}
+                </div>
               </div>
               <div className='mt-1 flex items-center gap-3 text-xs text-gray-500'>
                 <span className='flex items-center gap-1'>
@@ -347,32 +370,35 @@ export function PullRequestsPage() {
           </Link>
         </div>
 
-        <div className='space-y-6'>
-          {groups.map(group => (
-            <div
-              key={group.title}
-              className='bg-white shadow-sm rounded-lg overflow-hidden'
-            >
-              <div className='px-4 py-3 bg-gray-50 border-b flex items-center justify-between'>
-                <h2 className='text-sm font-medium text-gray-900 flex items-center gap-2'>
-                  <span className='text-lg'>{group.icon}</span>
-                  {group.title}
-                </h2>
-                <span className='text-sm text-gray-500'>
-                  {group.pullRequests.length}件
-                </span>
-              </div>
-              {group.pullRequests.length > 0 ? (
-                <div className='divide-y divide-gray-200'>
-                  {group.pullRequests.map(renderPRItem)}
-                </div>
-              ) : (
-                <div className='px-4 py-6 text-center text-sm text-gray-500'>
-                  該当するPRはありません
-                </div>
-              )}
+        <div className='bg-white shadow-sm rounded-lg overflow-hidden'>
+          <div className='px-4 py-3 bg-gray-50 border-b flex items-center justify-between'>
+            <h2 className='text-sm font-medium text-gray-900'>
+              未読 {unreadCount} / {allPRsWithCategories.length}件
+            </h2>
+            <div className='flex items-center gap-3 text-xs text-gray-500'>
+              <span className='flex items-center gap-1'>
+                <span>💬</span> メンション
+              </span>
+              <span className='flex items-center gap-1'>
+                <span>📌</span> アサイン
+              </span>
+              <span className='flex items-center gap-1'>
+                <span>👀</span> レビュー依頼
+              </span>
+              <span className='flex items-center gap-1'>
+                <span>✏️</span> 作成
+              </span>
             </div>
-          ))}
+          </div>
+          {allPRsWithCategories.length > 0 ? (
+            <div className='divide-y divide-gray-200'>
+              {allPRsWithCategories.map(renderPRItem)}
+            </div>
+          ) : (
+            <div className='px-4 py-6 text-center text-sm text-gray-500'>
+              該当するPRはありません
+            </div>
+          )}
         </div>
       </div>
     </Layout>
