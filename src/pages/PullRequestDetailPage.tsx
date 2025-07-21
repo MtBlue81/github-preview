@@ -4,6 +4,7 @@ import { GET_PULL_REQUEST_DETAIL } from '../lib/queries';
 import ReactMarkdown from 'react-markdown';
 import { formatDistanceToNow } from 'date-fns';
 import { Layout } from '../components/Layout';
+import { useFocusStore } from '../stores/focusStore';
 import { useEffect } from 'react';
 import type { FileNode, ConversationItem } from '../types/github';
 
@@ -14,26 +15,29 @@ export function PullRequestDetailPage() {
     number: string;
   }>();
   const navigate = useNavigate();
+  const { setLastFocusedPR } = useFocusStore();
 
   const { data, loading, error } = useQuery(GET_PULL_REQUEST_DETAIL, {
     variables: { owner, repo, number: parseInt(number || '0') },
-    pollInterval: 30000,
+    pollInterval: 60000,
   });
+
+  const pr = data?.repository?.pullRequest;
 
   // キーボードショートカット - すべてのフックは早期リターンの前に配置
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'g') {
-        navigate('/');
+        if (pr) {
+          setLastFocusedPR(pr.id);
+        }
+        navigate(-1);
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [navigate]);
-
-
-  const pr = data?.repository?.pullRequest;
+  }, [navigate, pr, setLastFocusedPR]);
 
   // 早期リターンはすべてのフックの後に配置
   if (loading) {
@@ -67,6 +71,9 @@ export function PullRequestDetailPage() {
         <div className='mb-4'>
           <button
             onClick={() => {
+              if (pr) {
+                setLastFocusedPR(pr.id);
+              }
               navigate(-1);
             }}
             className='text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1'

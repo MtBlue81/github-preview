@@ -4,6 +4,7 @@ import { GET_PULL_REQUESTS } from '../lib/queries';
 import { PullRequest } from '../types/github';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigationStore } from '../stores/navigationStore';
+import { useFocusStore } from '../stores/focusStore';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -17,6 +18,7 @@ interface PRGroup {
 export function PullRequestsPage() {
   const { user } = useAuthStore();
   const { setAllPullRequests, setCurrentPR } = useNavigationStore();
+  const { lastFocusedPRId, clearLastFocusedPR } = useFocusStore();
 
   // 複数のクエリを並列実行
   const authorQuery = useQuery(GET_PULL_REQUESTS, {
@@ -117,6 +119,18 @@ export function PullRequestsPage() {
     }
   }, [allPRs, setAllPullRequests]);
 
+  // フォーカス復帰処理
+  useEffect(() => {
+    if (lastFocusedPRId) {
+      const element = document.getElementById(`pr-${lastFocusedPRId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.focus();
+        clearLastFocusedPR();
+      }
+    }
+  }, [lastFocusedPRId, clearLastFocusedPR]);
+
   // 早期リターンはすべてのフックの後に配置
   if (loading) {
     return (
@@ -141,8 +155,9 @@ export function PullRequestsPage() {
   const renderPRItem = (pr: PullRequest) => (
     <Link
       key={pr.id}
+      id={`pr-${pr.id}`}
       to={`/pr/${pr.repository.owner.login}/${pr.repository.name}/${pr.number}`}
-      className='block hover:bg-gray-50 px-4 py-3 border-b last:border-b-0'
+      className='block hover:bg-gray-50 px-4 py-3 border-b last:border-b-0 focus:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset'
       onClick={() => setCurrentPR(pr)}
     >
       <div className='flex items-start justify-between'>
