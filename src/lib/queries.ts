@@ -58,6 +58,10 @@ export const GET_PULL_REQUESTS = gql`
 export const GET_PULL_REQUEST_DETAIL = gql`
   query GetPullRequestDetail($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {
+      owner {
+        login
+      }
+      name
       pullRequest(number: $number) {
         id
         number

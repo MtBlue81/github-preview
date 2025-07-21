@@ -1,10 +1,9 @@
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
 import { GET_PULL_REQUEST_DETAIL } from '../lib/queries';
 import ReactMarkdown from 'react-markdown';
 import { formatDistanceToNow } from 'date-fns';
 import { Layout } from '../components/Layout';
-import { useNavigationStore } from '../stores/navigationStore';
 import { useEffect } from 'react';
 import type { FileNode, ConversationItem } from '../types/github';
 
@@ -15,8 +14,6 @@ export function PullRequestDetailPage() {
     number: string;
   }>();
   const navigate = useNavigate();
-  const { getNextPR, getPreviousPR, currentPRIndex, allPullRequests } =
-    useNavigationStore();
 
   const { data, loading, error } = useQuery(GET_PULL_REQUEST_DETAIL, {
     variables: { owner, repo, number: parseInt(number || '0') },
@@ -26,31 +23,15 @@ export function PullRequestDetailPage() {
   // キーボードショートカット - すべてのフックは早期リターンの前に配置
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft' || e.key === 'h') {
-        const prevPR = getPreviousPR();
-        if (prevPR) {
-          navigate(
-            `/pr/${prevPR.repository.owner.login}/${prevPR.repository.name}/${prevPR.number}`
-          );
-        }
-      } else if (e.key === 'ArrowRight' || e.key === 'l') {
-        const nextPR = getNextPR();
-        if (nextPR) {
-          navigate(
-            `/pr/${nextPR.repository.owner.login}/${nextPR.repository.name}/${nextPR.number}`
-          );
-        }
-      } else if (e.key === 'Escape' || e.key === 'g') {
+      if (e.key === 'Escape' || e.key === 'g') {
         navigate('/');
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [navigate, getNextPR, getPreviousPR]);
+  }, [navigate]);
 
-  const prevPR = getPreviousPR();
-  const nextPR = getNextPR();
 
   const pr = data?.repository?.pullRequest;
 
@@ -83,52 +64,43 @@ export function PullRequestDetailPage() {
     <Layout>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         {/* ナビゲーションバー */}
-        <div className='mb-4 flex items-center justify-between'>
-          <div className='flex items-center gap-4'>
-            <button
-              onClick={() => {
-                navigate(-1);
-              }}
-              className='text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1'
-            >
-              ← PR一覧に戻る
-            </button>
-            <span className='text-sm text-gray-400'>
-              {currentPRIndex + 1} / {allPullRequests.length}
-            </span>
-          </div>
-          <div className='flex items-center gap-2'>
-            <button
-              onClick={() =>
-                prevPR &&
-                navigate(
-                  `/pr/${prevPR.repository.owner.login}/${prevPR.repository.name}/${prevPR.number}`
-                )
-              }
-              disabled={!prevPR}
-              className='px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed'
-              title='前のPR (← または h)'
-            >
-              ← 前のPR
-            </button>
-            <button
-              onClick={() =>
-                nextPR &&
-                navigate(
-                  `/pr/${nextPR.repository.owner.login}/${nextPR.repository.name}/${nextPR.number}`
-                )
-              }
-              disabled={!nextPR}
-              className='px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed'
-              title='次のPR (→ または l)'
-            >
-              次のPR →
-            </button>
-          </div>
+        <div className='mb-4'>
+          <button
+            onClick={() => {
+              navigate(-1);
+            }}
+            className='text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1'
+          >
+            ← PR一覧に戻る
+          </button>
         </div>
 
         <div className='mb-6'>
-          <h1 className='text-2xl font-bold text-gray-900 mb-2'>{pr.title}</h1>
+          <h1 className='text-2xl font-bold text-gray-900 mb-2'>
+            <a
+              href={pr.url}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='hover:text-blue-600 hover:underline flex items-center gap-2'
+              title='GitHubで開く'
+            >
+              {pr.title}
+              <svg
+                className='w-4 h-4'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+                xmlns='http://www.w3.org/2000/svg'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'
+                />
+              </svg>
+            </a>
+          </h1>
           <div className='flex items-center text-sm text-gray-600'>
             <span
               className={`px-2 py-1 rounded ${

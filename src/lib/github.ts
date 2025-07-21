@@ -37,7 +37,16 @@ const loggingLink = new ApolloLink((operation, forward) => {
 
 export const githubClient = new ApolloClient({
   link: ApolloLink.from([loggingLink, authLink, httpLink]),
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache({
+    typePolicies: {
+      Repository: {
+        keyFields: ['owner', 'name'],
+      },
+      PullRequest: {
+        keyFields: ['id'],
+      },
+    },
+  }),
 });
 
 // ログイン検証用のクライアント作成関数
@@ -53,6 +62,15 @@ export const createAuthTestClient = (token: string) => {
 
   return new ApolloClient({
     link: ApolloLink.from([loggingLink, testAuthLink, httpLink]),
-    cache: new InMemoryCache(),
+    cache: new InMemoryCache({
+      typePolicies: {
+        Repository: {
+          keyFields: ['owner', 'name'],
+        },
+        PullRequest: {
+          keyFields: ['id'],
+        },
+      },
+    }),
   });
 };
