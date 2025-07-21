@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { formatDistanceToNow } from 'date-fns';
 import { Layout } from '../components/Layout';
 import { useFocusStore } from '../stores/focusStore';
+import { useReadStatusStore } from '../stores/readStatusStore';
 import { useEffect } from 'react';
 import type { FileNode, ConversationItem } from '../types/github';
 
@@ -16,6 +17,7 @@ export function PullRequestDetailPage() {
   }>();
   const navigate = useNavigate();
   const { setLastFocusedPR } = useFocusStore();
+  const { markAsRead } = useReadStatusStore();
 
   const { data, loading, error } = useQuery(GET_PULL_REQUEST_DETAIL, {
     variables: { owner, repo, number: parseInt(number || '0') },
@@ -23,6 +25,13 @@ export function PullRequestDetailPage() {
   });
 
   const pr = data?.repository?.pullRequest;
+
+  // PR詳細が読み込まれたら既読にマーク
+  useEffect(() => {
+    if (pr) {
+      markAsRead(pr.id, pr.updatedAt);
+    }
+  }, [pr, markAsRead]);
 
   // キーボードショートカット - すべてのフックは早期リターンの前に配置
   useEffect(() => {
@@ -65,7 +74,7 @@ export function PullRequestDetailPage() {
   }
 
   return (
-    <Layout>
+    <Layout allPRs={[]}>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         {/* ナビゲーションバー */}
         <div className='mb-4'>

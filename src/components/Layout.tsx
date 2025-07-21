@@ -1,9 +1,21 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { useReadStatusStore } from '../stores/readStatusStore';
+import { useMemo } from 'react';
 
-export function Layout({ children }: { children: React.ReactNode }) {
+interface LayoutProps {
+  children: React.ReactNode;
+  allPRs?: Array<{ id: string; updatedAt: string }>;
+}
+
+export function Layout({ children, allPRs = [] }: LayoutProps) {
   const { user, logout } = useAuthStore();
+  const { getUnreadCount } = useReadStatusStore();
   const navigate = useNavigate();
+
+  const unreadCount = useMemo(() => {
+    return getUnreadCount(allPRs);
+  }, [getUnreadCount, allPRs]);
 
   const handleLogout = () => {
     logout();
@@ -20,6 +32,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <h1 className='text-xl font-bold text-gray-900'>
                   GitHub PR Preview
                 </h1>
+                {unreadCount > 0 && (
+                  <span className='ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800'>
+                    {unreadCount}
+                  </span>
+                )}
               </Link>
             </div>
             <div className='flex items-center'>

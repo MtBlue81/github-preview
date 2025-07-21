@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigationStore } from '../stores/navigationStore';
 import { useFocusStore } from '../stores/focusStore';
 import { useIgnoreStore } from '../stores/ignoreStore';
+import { useReadStatusStore } from '../stores/readStatusStore';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -21,6 +22,7 @@ export function PullRequestsPage() {
   const { setAllPullRequests, setCurrentPR } = useNavigationStore();
   const { lastFocusedPRId, clearLastFocusedPR } = useFocusStore();
   const { isIgnored, addIgnoredPR, ignoredPRIds } = useIgnoreStore();
+  const { isUnread, markAsRead } = useReadStatusStore();
 
   // 複数のクエリを並列実行
   const authorQuery = useQuery(GET_PULL_REQUESTS, {
@@ -177,109 +179,132 @@ export function PullRequestsPage() {
     addIgnoredPR(prKey);
   };
 
-  const renderPRItem = (pr: PullRequest) => (
-    <div
-      key={pr.id}
-      id={`pr-${pr.id}`}
-      className='relative group hover:bg-gray-50 focus:bg-blue-50'
-    >
-      <Link
-        to={`/pr/${pr.repository.owner.login}/${pr.repository.name}/${pr.number}`}
-        className='block px-4 py-3 border-b last:border-b-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset'
-        onClick={() => setCurrentPR(pr)}
+  const renderPRItem = (pr: PullRequest) => {
+    const isItemUnread = isUnread(pr.id, pr.updatedAt);
+
+    return (
+      <div
+        key={pr.id}
+        id={`pr-${pr.id}`}
+        className={`relative group hover:bg-gray-50 focus:bg-blue-50 ${
+          isItemUnread ? 'bg-blue-50/30' : ''
+        }`}
       >
-        <div className='flex items-start justify-between'>
-          <div className='flex-1 min-w-0'>
-            <div className='flex items-center gap-2'>
-              {pr.isDraft && (
-                <span className='inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800'>
-                  Draft
+        <Link
+          to={`/pr/${pr.repository.owner.login}/${pr.repository.name}/${pr.number}`}
+          className='block px-4 py-3 border-b last:border-b-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset'
+          onClick={() => {
+            setCurrentPR(pr);
+            markAsRead(pr.id, pr.updatedAt);
+          }}
+        >
+          <div className='flex items-start justify-between'>
+            <div className='flex-1 min-w-0'>
+              <div className='flex items-center gap-2'>
+                {isItemUnread && (
+                  <span
+                    className='w-2 h-2 bg-blue-500 rounded-full flex-shrink-0'
+                    title='未読'
+                  ></span>
+                )}
+                {pr.isDraft && (
+                  <span className='inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800'>
+                    Draft
+                  </span>
+                )}
+                <h4
+                  className={`text-sm font-medium truncate ${
+                    isItemUnread
+                      ? 'text-gray-900 font-semibold'
+                      : 'text-gray-900'
+                  }`}
+                >
+                  {pr.title}
+                </h4>
+              </div>
+              <div className='mt-1 text-xs text-gray-600'>
+                {pr.repository.owner.login}/{pr.repository.name} #{pr.number}
+              </div>
+              <div className='mt-1 flex items-center gap-3 text-xs text-gray-500'>
+                <span className='flex items-center gap-1'>
+                  <img
+                    className='w-4 h-4 rounded-full'
+                    src={pr.author.avatarUrl}
+                    alt={pr.author.login}
+                  />
+                  {pr.author.login}
+                </span>
+                <span>
+                  {formatDistanceToNow(new Date(pr.updatedAt), {
+                    addSuffix: true,
+                  })}
+                </span>
+                <span>{pr.commits.totalCount} commits</span>
+                <span>
+                  {pr.comments.totalCount + pr.reviews.totalCount} comments
+                </span>
+              </div>
+            </div>
+            <div className='ml-2 flex-shrink-0'>
+              {pr.reviewDecision === 'APPROVED' && (
+                <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800'>
+                  Approved
                 </span>
               )}
-              <h4 className='text-sm font-medium text-gray-900 truncate'>
-                {pr.title}
-              </h4>
-            </div>
-            <div className='mt-1 text-xs text-gray-600'>
-              {pr.repository.owner.login}/{pr.repository.name} #{pr.number}
-            </div>
-            <div className='mt-1 flex items-center gap-3 text-xs text-gray-500'>
-              <span className='flex items-center gap-1'>
-                <img
-                  className='w-4 h-4 rounded-full'
-                  src={pr.author.avatarUrl}
-                  alt={pr.author.login}
-                />
-                {pr.author.login}
-              </span>
-              <span>
-                {formatDistanceToNow(new Date(pr.updatedAt), {
-                  addSuffix: true,
-                })}
-              </span>
-              <span>{pr.commits.totalCount} commits</span>
-              <span>
-                {pr.comments.totalCount + pr.reviews.totalCount} comments
-              </span>
+              {pr.reviewDecision === 'CHANGES_REQUESTED' && (
+                <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800'>
+                  Changes
+                </span>
+              )}
             </div>
           </div>
-          <div className='ml-2 flex-shrink-0'>
-            {pr.reviewDecision === 'APPROVED' && (
-              <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800'>
-                Approved
-              </span>
-            )}
-            {pr.reviewDecision === 'CHANGES_REQUESTED' && (
-              <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800'>
-                Changes
-              </span>
-            )}
-          </div>
-        </div>
-        {pr.labels.nodes.length > 0 && (
-          <div className='mt-2 flex flex-wrap gap-1'>
-            {pr.labels.nodes.map(label => (
-              <span
-                key={label.name}
-                className='inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium'
-                style={{
-                  backgroundColor: `#${label.color}`,
-                  color:
-                    parseInt(label.color, 16) > 0xffffff / 2 ? '#000' : '#fff',
-                }}
-              >
-                {label.name}
-              </span>
-            ))}
-          </div>
-        )}
-      </Link>
-      <button
-        onClick={e => handleIgnorePR(e, pr)}
-        className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded bg-gray-200 hover:bg-red-200 text-gray-600 hover:text-red-700'
-        title='このPRを無視する'
-        tabIndex={-1}
-      >
-        <svg
-          className='w-4 h-4'
-          fill='none'
-          stroke='currentColor'
-          viewBox='0 0 24 24'
-          xmlns='http://www.w3.org/2000/svg'
+          {pr.labels.nodes.length > 0 && (
+            <div className='mt-2 flex flex-wrap gap-1'>
+              {pr.labels.nodes.map(label => (
+                <span
+                  key={label.name}
+                  className='inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium'
+                  style={{
+                    backgroundColor: `#${label.color}`,
+                    color:
+                      parseInt(label.color, 16) > 0xffffff / 2
+                        ? '#000'
+                        : '#fff',
+                  }}
+                >
+                  {label.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </Link>
+        <button
+          onClick={e => handleIgnorePR(e, pr)}
+          className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded bg-gray-200 hover:bg-red-200 text-gray-600 hover:text-red-700'
+          title='このPRを無視する'
+          tabIndex={-1}
         >
-          <path
-            strokeLinecap='round'
-            strokeLinejoin='round'
-            strokeWidth={2}
-            d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 16.121m6.878-6.243L16.121 3M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
-          />
-        </svg>
-      </button>
-    </div>
-  );
+          <svg
+            className='w-4 h-4'
+            fill='none'
+            stroke='currentColor'
+            viewBox='0 0 24 24'
+            xmlns='http://www.w3.org/2000/svg'
+          >
+            <path
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              strokeWidth={2}
+              d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 16.121m6.878-6.243L16.121 3M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
+            />
+          </svg>
+        </button>
+      </div>
+    );
+  };
 
   return (
-    <Layout>
+    <Layout allPRs={allPRs}>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <div className='mb-6 flex items-center justify-between'>
           <div>
