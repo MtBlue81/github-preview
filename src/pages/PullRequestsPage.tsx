@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_PULL_REQUESTS } from '../lib/queries';
 import { PullRequest } from '../types/github';
@@ -7,6 +7,7 @@ import { useNavigationStore } from '../stores/navigationStore';
 import { useFocusStore } from '../stores/focusStore';
 import { useIgnoreStore } from '../stores/ignoreStore';
 import { useReadStatusStore } from '../stores/readStatusStore';
+import { notificationService } from '../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -117,6 +118,7 @@ export function PullRequestsPage() {
       reviewRequestedQuery.data?.search?.nodes,
       assigneeQuery.data?.search?.nodes,
       mentionsQuery.data?.search?.nodes,
+      ignoredPRIds,
     ]
   );
 
@@ -130,12 +132,51 @@ export function PullRequestsPage() {
     return groups.flatMap(group => group.pullRequests);
   }, [groups]);
 
-  // PRリストが更新されたらナビゲーションストアに保存
+  // 以前のPRリストを保持
+  const previousPRsRef = useRef<PullRequest[]>([]);
+  const hasInitializedRef = useRef(false);
+
+  // PRリストが更新されたらナビゲーションストアに保存し、新しい未読を検知
   useEffect(() => {
     if (allPRs.length > 0) {
       setAllPullRequests(allPRs);
+
+      // 初回読み込み後、通知権限をリクエスト
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+        notificationService.requestPermission();
+      }
+
+      // 差分検知（初回スキップ）
+      if (previousPRsRef.current.length > 0) {
+        // 新しい未読PRを検出
+        const previousIds = new Set(previousPRsRef.current.map(pr => pr.id));
+        const newUnreadPRs = allPRs.filter(
+          pr => !previousIds.has(pr.id) && isUnread(pr.id, pr.updatedAt)
+        );
+
+        // 更新された未読PRを検出
+        const updatedUnreadPRs = allPRs.filter(pr => {
+          const prevPR = previousPRsRef.current.find(p => p.id === pr.id);
+          return (
+            prevPR &&
+            new Date(pr.updatedAt) > new Date(prevPR.updatedAt) &&
+            isUnread(pr.id, pr.updatedAt)
+          );
+        });
+
+        // 通知を送信
+        newUnreadPRs.forEach(pr => {
+          notificationService.sendPRUpdateNotification(pr.title, 'new');
+        });
+        updatedUnreadPRs.forEach(pr => {
+          notificationService.sendPRUpdateNotification(pr.title, 'updated');
+        });
+      }
+
+      previousPRsRef.current = allPRs;
     }
-  }, [allPRs, setAllPullRequests]);
+  }, [allPRs, setAllPullRequests, isUnread]);
 
   // フォーカス復帰処理
   useEffect(() => {
@@ -309,14 +350,6 @@ export function PullRequestsPage() {
         <div className='mb-6 flex items-center justify-between'>
           <div>
             <h1 className='text-2xl font-bold text-gray-900'>Pull Requests</h1>
-            <p className='mt-1 text-sm text-gray-600'>
-              {totalPRs} 件のオープンなPRがあります
-              {ignoredPRIds.size > 0 && (
-                <span className='ml-2 text-gray-500'>
-                  （{ignoredPRIds.size} 件を無視中）
-                </span>
-              )}
-            </p>
           </div>
           <Link
             to='/ignored'
