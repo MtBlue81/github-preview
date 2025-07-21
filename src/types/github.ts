@@ -48,7 +48,12 @@ export interface ReviewNode {
     login: string;
     avatarUrl: string;
   };
-  state: 'PENDING' | 'COMMENTED' | 'APPROVED' | 'CHANGES_REQUESTED' | 'DISMISSED';
+  state:
+    | 'PENDING'
+    | 'COMMENTED'
+    | 'APPROVED'
+    | 'CHANGES_REQUESTED'
+    | 'DISMISSED';
   body: string;
   createdAt: string;
 }
@@ -65,7 +70,8 @@ export interface CommentNode {
 
 export type ConversationItem = ReviewNode | CommentNode;
 
-export interface PullRequestDetail extends Omit<PullRequest, 'comments' | 'reviews'> {
+export interface PullRequestDetail
+  extends Omit<PullRequest, 'comments' | 'reviews'> {
   body: string;
   bodyHTML: string;
   mergeable: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN';

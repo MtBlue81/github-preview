@@ -14,15 +14,15 @@ interface NavigationState {
 export const useNavigationStore = create<NavigationState>((set, get) => ({
   allPullRequests: [],
   currentPRIndex: -1,
-  
-  setAllPullRequests: (prs) => set({ allPullRequests: prs }),
-  
-  setCurrentPR: (pr) => {
+
+  setAllPullRequests: prs => set({ allPullRequests: prs }),
+
+  setCurrentPR: pr => {
     const { allPullRequests } = get();
     const index = allPullRequests.findIndex(p => p.id === pr.id);
     set({ currentPRIndex: index });
   },
-  
+
   getNextPR: () => {
     const { allPullRequests, currentPRIndex } = get();
     if (currentPRIndex >= 0 && currentPRIndex < allPullRequests.length - 1) {
@@ -30,7 +30,7 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
     }
     return null;
   },
-  
+
   getPreviousPR: () => {
     const { allPullRequests, currentPRIndex } = get();
     if (currentPRIndex > 0) {
@@ -38,7 +38,7 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
     }
     return null;
   },
-  
+
   getCurrentPR: () => {
     const { allPullRequests, currentPRIndex } = get();
     if (currentPRIndex >= 0 && currentPRIndex < allPullRequests.length) {

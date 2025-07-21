@@ -14,7 +14,8 @@
       "WebFetch(domain:reactrouter.com)",
       "WebFetch(domain:api.reactrouter.com)",
       "Bash(npm install:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(npm run format:*)"
     ],
     "deny": []
   }

@@ -1,4 +1,9 @@
-import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink } from '@apollo/client';
+import {
+  ApolloClient,
+  InMemoryCache,
+  createHttpLink,
+  ApolloLink,
+} from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { useAuthStore } from '../stores/authStore';
 
@@ -23,7 +28,7 @@ const loggingLink = new ApolloLink((operation, forward) => {
     variables: operation.variables,
     headers: operation.getContext().headers,
   });
-  
+
   return forward(operation).map(response => {
     console.log('GraphQL Response:', response);
     return response;
@@ -45,7 +50,7 @@ export const createAuthTestClient = (token: string) => {
       },
     };
   });
-  
+
   return new ApolloClient({
     link: ApolloLink.from([loggingLink, testAuthLink, httpLink]),
     cache: new InMemoryCache(),

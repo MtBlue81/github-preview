@@ -2,6 +2,8 @@ import js from '@eslint/js';
 import typescript from 'typescript-eslint';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
+import prettier from 'eslint-config-prettier';
+import prettierPlugin from 'eslint-plugin-prettier';
 
 export default [
   // 基本的なJavaScript設定
@@ -16,6 +18,7 @@ export default [
     plugins: {
       react,
       'react-hooks': reactHooks,
+      prettier: prettierPlugin,
     },
     languageOptions: {
       parserOptions: {
@@ -48,8 +51,14 @@ export default [
       'react/prop-types': 'off', // TypeScriptを使用しているため不要
       'react/display-name': 'off',
       'react/no-unescaped-entities': 'warn',
+      
+      // Prettierルール
+      'prettier/prettier': 'error',
     },
   },
+  
+  // Prettier設定（ESLintルールとの衝突を避けるため最後に配置）
+  prettier,
   
   // 無視するファイル
   {

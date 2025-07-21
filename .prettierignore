@@ -1,0 +1,33 @@
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Dependencies
+node_modules/
+
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# Config files
+*.config.js
+*.config.ts
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Generated files
+*.min.js
+*.min.css

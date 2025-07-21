@@ -1,4 +1,9 @@
-import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+  Outlet,
+} from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client';
 import { LoginPage } from './pages/LoginPage';
 import { PullRequestsPage } from './pages/PullRequestsPage';
@@ -9,20 +14,20 @@ import { useAuthStore } from './stores/authStore';
 
 function PrivateRoute() {
   const { token } = useAuthStore();
-  return token ? <Outlet /> : <Navigate to="/login" />;
+  return token ? <Outlet /> : <Navigate to='/login' />;
 }
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <RootLayout />,
     children: [
       {
-        path: "login",
+        path: 'login',
         element: <LoginPage />,
       },
       {
-        path: "/",
+        path: '/',
         element: <PrivateRoute />,
         children: [
           {
@@ -30,7 +35,7 @@ const router = createBrowserRouter([
             element: <PullRequestsPage />,
           },
           {
-            path: "pr/:owner/:repo/:number",
+            path: 'pr/:owner/:repo/:number',
             element: <PullRequestDetailPage />,
           },
         ],
