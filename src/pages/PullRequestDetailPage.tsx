@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Layout } from '../components/Layout';
 import { useNavigationStore } from '../stores/navigationStore';
 import { useEffect } from 'react';
+import type { FileNode, ConversationItem } from '../types/github';
 
 export function PullRequestDetailPage() {
   const { owner, repo, number } = useParams<{ owner: string; repo: string; number: string }>();
@@ -17,33 +18,7 @@ export function PullRequestDetailPage() {
     pollInterval: 30000,
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Loading pull request...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-red-600">Error: {error.message}</div>
-      </div>
-    );
-  }
-
-  const pr = data?.repository?.pullRequest;
-
-  if (!pr) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-gray-600">Pull request not found</div>
-      </div>
-    );
-  }
-  
-  // キーボードショートカット
+  // キーボードショートカット - すべてのフックは早期リターンの前に配置
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' || e.key === 'h') {
@@ -67,6 +42,33 @@ export function PullRequestDetailPage() {
 
   const prevPR = getPreviousPR();
   const nextPR = getNextPR();
+  
+  const pr = data?.repository?.pullRequest;
+
+  // 早期リターンはすべてのフックの後に配置
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Loading pull request...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-red-600">Error: {error.message}</div>
+      </div>
+    );
+  }
+
+  if (!pr) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-gray-600">Pull request not found</div>
+      </div>
+    );
+  }
 
   return (
     <Layout>
@@ -132,7 +134,7 @@ export function PullRequestDetailPage() {
             Files changed ({pr.files.nodes.length})
           </h3>
           <div className="space-y-2">
-            {pr.files.nodes.map((file: any) => (
+            {pr.files.nodes.map((file: FileNode) => (
               <div key={file.path} className="flex items-center justify-between py-2 border-b">
                 <span className="text-sm font-mono">{file.path}</span>
                 <div className="flex items-center space-x-2 text-sm">
@@ -153,7 +155,7 @@ export function PullRequestDetailPage() {
           <div className="space-y-4">
             {[...pr.reviews.nodes, ...pr.comments.nodes]
               .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-              .map((item: any) => (
+              .map((item: ConversationItem) => (
                 <div key={item.id} className="flex space-x-3">
                   <img
                     className="h-10 w-10 rounded-full"

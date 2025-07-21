@@ -30,9 +30,9 @@ export function LoginPage() {
         setUser(data.viewer);
         navigate('/');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Login error:', err);
-      const errorMessage = err?.message || 'Invalid token. Please check your GitHub personal access token.';
+      const errorMessage = err instanceof Error ? err.message : 'Invalid token. Please check your GitHub personal access token.';
       setError(errorMessage);
     } finally {
       setLoading(false);

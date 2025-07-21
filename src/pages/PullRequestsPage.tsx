@@ -42,26 +42,6 @@ export function PullRequestsPage() {
   const loading = authorQuery.loading || assigneeQuery.loading || mentionsQuery.loading || reviewRequestedQuery.loading;
   const error = authorQuery.error || assigneeQuery.error || mentionsQuery.error || reviewRequestedQuery.error;
 
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-lg">Loading pull requests...</div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-red-600">Error: {error.message}</div>
-        </div>
-      </Layout>
-    );
-  }
-
   // PRをIDでユニークにする関数
   const getUniquePRs = (prs: PullRequest[]): PullRequest[] => {
     const seen = new Set<string>();
@@ -106,6 +86,27 @@ export function PullRequestsPage() {
       setAllPullRequests(allPRs);
     }
   }, [allPRs, setAllPullRequests]);
+
+  // 早期リターンはすべてのフックの後に配置
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-lg">Loading pull requests...</div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-red-600">Error: {error.message}</div>
+        </div>
+      </Layout>
+    );
+  }
 
   const renderPRItem = (pr: PullRequest) => (
     <Link

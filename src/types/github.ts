@@ -35,41 +35,49 @@ export interface PullRequest {
   };
 }
 
+export interface FileNode {
+  path: string;
+  additions: number;
+  deletions: number;
+  changeType: 'ADDED' | 'MODIFIED' | 'DELETED' | 'RENAMED' | 'COPIED';
+}
+
+export interface ReviewNode {
+  id: string;
+  author: {
+    login: string;
+    avatarUrl: string;
+  };
+  state: 'PENDING' | 'COMMENTED' | 'APPROVED' | 'CHANGES_REQUESTED' | 'DISMISSED';
+  body: string;
+  createdAt: string;
+}
+
+export interface CommentNode {
+  id: string;
+  author: {
+    login: string;
+    avatarUrl: string;
+  };
+  body: string;
+  createdAt: string;
+}
+
+export type ConversationItem = ReviewNode | CommentNode;
+
 export interface PullRequestDetail extends Omit<PullRequest, 'comments' | 'reviews'> {
   body: string;
   bodyHTML: string;
   mergeable: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN';
   files: {
-    nodes: Array<{
-      path: string;
-      additions: number;
-      deletions: number;
-      changeType: 'ADDED' | 'MODIFIED' | 'DELETED' | 'RENAMED' | 'COPIED';
-    }>;
+    nodes: FileNode[];
   };
   reviews: {
     totalCount: number;
-    nodes: Array<{
-      id: string;
-      author: {
-        login: string;
-        avatarUrl: string;
-      };
-      state: 'PENDING' | 'COMMENTED' | 'APPROVED' | 'CHANGES_REQUESTED' | 'DISMISSED';
-      body: string;
-      createdAt: string;
-    }>;
+    nodes: ReviewNode[];
   };
   comments: {
     totalCount: number;
-    nodes: Array<{
-      id: string;
-      author: {
-        login: string;
-        avatarUrl: string;
-      };
-      body: string;
-      createdAt: string;
-    }>;
+    nodes: CommentNode[];
   };
 }

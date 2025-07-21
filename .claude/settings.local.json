@@ -12,7 +12,9 @@
       "Bash(npm run build:*)",
       "WebFetch(domain:docs.github.com)",
       "WebFetch(domain:reactrouter.com)",
-      "WebFetch(domain:api.reactrouter.com)"
+      "WebFetch(domain:api.reactrouter.com)",
+      "Bash(npm install:*)",
+      "Bash(npm run lint)"
     ],
     "deny": []
   }
