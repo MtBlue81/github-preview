@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_PULL_REQUESTS } from '../lib/queries';
 import { PullRequest } from '../types/github';
@@ -43,16 +43,16 @@ export function PullRequestsPage() {
   const error = authorQuery.error || assigneeQuery.error || mentionsQuery.error || reviewRequestedQuery.error;
 
   // PRをIDでユニークにする関数
-  const getUniquePRs = (prs: PullRequest[]): PullRequest[] => {
+  const getUniquePRs = useCallback((prs: PullRequest[]): PullRequest[] => {
     const seen = new Set<string>();
     return prs.filter(pr => {
       if (seen.has(pr.id)) return false;
       seen.add(pr.id);
       return true;
     });
-  };
+  }, []);
 
-  const groups: PRGroup[] = [
+  const groups: PRGroup[] = useMemo(() => [
     {
       title: '作成したPR',
       icon: '✏️',
@@ -73,12 +73,14 @@ export function PullRequestsPage() {
       icon: '💬',
       pullRequests: getUniquePRs(mentionsQuery.data?.search?.nodes?.filter(Boolean) || []),
     },
-  ];
+  ], [authorQuery.data, reviewRequestedQuery.data, assigneeQuery.data, mentionsQuery.data]);
 
   const totalPRs = groups.reduce((sum, group) => sum + group.pullRequests.length, 0);
   
-  // 全PRのフラットなリストを作成
-  const allPRs = groups.flatMap(group => group.pullRequests);
+  // 全PRのフラットなリストを作成（useMemoで最適化）
+  const allPRs = useMemo(() => {
+    return groups.flatMap(group => group.pullRequests);
+  }, [groups]);
   
   // PRリストが更新されたらナビゲーションストアに保存
   useEffect(() => {
