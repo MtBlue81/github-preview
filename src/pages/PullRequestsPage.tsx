@@ -95,12 +95,14 @@ export function PullRequestsPage() {
       (a, b) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     allPullRequestsQuery.data?.authored?.nodes,
     allPullRequestsQuery.data?.reviewRequested?.nodes,
     allPullRequestsQuery.data?.assigned?.nodes,
     allPullRequestsQuery.data?.mentioned?.nodes,
     isIgnored,
+    ignoredPRIds,
   ]);
 
   // 全PRのフラットなリストを作成（ナビゲーション用）
@@ -172,8 +174,7 @@ export function PullRequestsPage() {
     return getUnreadCount(allPRs);
   }, [getUnreadCount, allPRs]);
 
-  // 早期リターンはすべてのフックの後に配置
-  if (loading) {
+  if (loading && allPRsWithCategories.length === 0) {
     return (
       <Layout loading={loading}>
         <div className='flex items-center justify-center h-screen'>
