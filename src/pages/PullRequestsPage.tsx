@@ -361,7 +361,6 @@ export function PullRequestsPage() {
 
   return (
     <Layout
-      allPRs={allPRs}
       rateLimit={allPullRequestsQuery.data?.rateLimit}
       loading={loading}
       onRefresh={handleRefresh}
