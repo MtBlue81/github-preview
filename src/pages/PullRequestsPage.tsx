@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_ALL_PULL_REQUESTS } from '../lib/queries';
 import { PullRequest } from '../types/github';
@@ -23,6 +23,7 @@ export function PullRequestsPage() {
   const { lastFocusedPRId, clearLastFocusedPR } = useFocusStore();
   const { isIgnored, addIgnoredPR, ignoredPRIds } = useIgnoreStore();
   const { isUnread, markAsRead, getUnreadCount } = useReadStatusStore();
+  const [lastUpdated, setLastUpdated] = useState<Date>();
 
   // 統合クエリで一度にすべてのPRを取得
   const allPullRequestsQuery = useQuery(GET_ALL_PULL_REQUESTS, {
@@ -37,6 +38,11 @@ export function PullRequestsPage() {
 
   const loading = allPullRequestsQuery.loading;
   const error = allPullRequestsQuery.error;
+  const refetch = allPullRequestsQuery.refetch;
+
+  const handleRefresh = async () => {
+    await refetch();
+  };
 
   // PRとカテゴリ情報を統合した配列を作成
   const allPRsWithCategories = useMemo(() => {
@@ -119,6 +125,7 @@ export function PullRequestsPage() {
   useEffect(() => {
     if (allPRs.length > 0) {
       setAllPullRequests(allPRs);
+      setLastUpdated(new Date());
 
       // 初回読み込み後、通知権限をリクエスト
       if (!hasInitializedRef.current) {
@@ -177,7 +184,11 @@ export function PullRequestsPage() {
 
   if (loading && allPRsWithCategories.length === 0) {
     return (
-      <Layout loading={loading}>
+      <Layout
+        loading={loading}
+        onRefresh={handleRefresh}
+        lastUpdated={lastUpdated}
+      >
         <div className='flex items-center justify-center h-screen'>
           <div className='text-lg'>Loading pull requests...</div>
         </div>
@@ -187,7 +198,11 @@ export function PullRequestsPage() {
 
   if (error) {
     return (
-      <Layout loading={loading}>
+      <Layout
+        loading={loading}
+        onRefresh={handleRefresh}
+        lastUpdated={lastUpdated}
+      >
         <div className='flex items-center justify-center h-screen'>
           <div className='text-red-600'>Error: {error.message}</div>
         </div>
@@ -349,6 +364,8 @@ export function PullRequestsPage() {
       allPRs={allPRs}
       rateLimit={allPullRequestsQuery.data?.rateLimit}
       loading={loading}
+      onRefresh={handleRefresh}
+      lastUpdated={lastUpdated}
     >
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <div className='mb-6 flex items-center justify-between'>

@@ -1,14 +1,18 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useReadStatusStore } from '../stores/readStatusStore';
+import { useToastStore } from '../stores/toastStore';
 import { RateLimit } from '../types/github';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface LayoutProps {
   children: React.ReactNode;
   allPRs?: Array<{ id: string; updatedAt: string }>;
   rateLimit?: RateLimit;
   loading?: boolean;
+  onRefresh?: () => Promise<void>;
+  lastUpdated?: Date;
 }
 
 export function Layout({
@@ -16,10 +20,14 @@ export function Layout({
   allPRs = [],
   rateLimit,
   loading = false,
+  onRefresh,
+  lastUpdated,
 }: LayoutProps) {
   const { user, logout } = useAuthStore();
   const { getUnreadCount } = useReadStatusStore();
+  const { addToast } = useToastStore();
   const navigate = useNavigate();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const unreadCount = useMemo(() => {
     return getUnreadCount(allPRs);
@@ -28,6 +36,27 @@ export function Layout({
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleRefresh = async () => {
+    if (!onRefresh || isRefreshing) return;
+
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+      addToast({
+        message: 'PR一覧を更新しました',
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to refresh:', error);
+      addToast({
+        message: 'PR一覧の更新に失敗しました',
+        type: 'error',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
@@ -86,6 +115,40 @@ export function Layout({
                       >
                         API: {rateLimit.remaining}/{rateLimit.limit}
                       </span>
+                      {lastUpdated && (
+                        <span
+                          className='text-xs text-gray-500'
+                          title={`最終更新: ${lastUpdated.toLocaleString()}`}
+                        >
+                          {formatDistanceToNow(lastUpdated, {
+                            addSuffix: true,
+                          })}
+                        </span>
+                      )}
+                      {onRefresh && (
+                        <button
+                          onClick={handleRefresh}
+                          disabled={isRefreshing || loading}
+                          className='inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed'
+                          title='最新データを取得'
+                        >
+                          <svg
+                            className={`w-3 h-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`}
+                            fill='none'
+                            stroke='currentColor'
+                            viewBox='0 0 24 24'
+                            xmlns='http://www.w3.org/2000/svg'
+                          >
+                            <path
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                              strokeWidth={2}
+                              d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
+                            />
+                          </svg>
+                          {isRefreshing ? '更新中' : '更新'}
+                        </button>
+                      )}
                     </div>
                   )}
                   <img
