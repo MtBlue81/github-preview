@@ -1,3 +1,51 @@
+export interface CheckRun {
+  __typename: 'CheckRun';
+  id: string;
+  name: string;
+  status:
+    | 'QUEUED'
+    | 'IN_PROGRESS'
+    | 'COMPLETED'
+    | 'WAITING'
+    | 'PENDING'
+    | 'REQUESTED';
+  conclusion?:
+    | 'ACTION_REQUIRED'
+    | 'CANCELLED'
+    | 'FAILURE'
+    | 'NEUTRAL'
+    | 'SKIPPED'
+    | 'STALE'
+    | 'STARTUP_FAILURE'
+    | 'SUCCESS'
+    | 'TIMED_OUT'
+    | null;
+  detailsUrl?: string;
+}
+
+export interface StatusContext {
+  __typename: 'StatusContext';
+  id: string;
+  context: string;
+  state: 'ERROR' | 'EXPECTED' | 'FAILURE' | 'PENDING' | 'SUCCESS';
+  targetUrl?: string;
+}
+
+export type StatusCheckContext = CheckRun | StatusContext;
+
+export interface StatusCheckRollup {
+  state: 'ERROR' | 'EXPECTED' | 'FAILURE' | 'PENDING' | 'SUCCESS';
+  contexts: {
+    nodes: StatusCheckContext[];
+  };
+}
+
+export interface PullRequestCommit {
+  commit: {
+    statusCheckRollup?: StatusCheckRollup | null;
+  };
+}
+
 export interface PullRequest {
   id: string;
   number: number;
@@ -20,6 +68,7 @@ export interface PullRequest {
   reviewDecision?: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null;
   commits: {
     totalCount: number;
+    nodes?: PullRequestCommit[];
   };
   comments: {
     totalCount: number;

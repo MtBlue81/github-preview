@@ -34,8 +34,33 @@ export const GET_PULL_REQUESTS = gql`
             }
           }
           reviewDecision
-          commits {
+          commits(last: 1) {
             totalCount
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                  contexts(first: 10) {
+                    nodes {
+                      __typename
+                      ... on CheckRun {
+                        id
+                        name
+                        status
+                        conclusion
+                        detailsUrl
+                      }
+                      ... on StatusContext {
+                        id
+                        context
+                        state
+                        targetUrl
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
           comments {
             totalCount
@@ -91,8 +116,33 @@ export const GET_ALL_PULL_REQUESTS = gql`
             }
           }
           reviewDecision
-          commits {
+          commits(last: 1) {
             totalCount
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                  contexts(first: 10) {
+                    nodes {
+                      __typename
+                      ... on CheckRun {
+                        id
+                        name
+                        status
+                        conclusion
+                        detailsUrl
+                      }
+                      ... on StatusContext {
+                        id
+                        context
+                        state
+                        targetUrl
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
           comments {
             totalCount
@@ -131,8 +181,33 @@ export const GET_ALL_PULL_REQUESTS = gql`
             }
           }
           reviewDecision
-          commits {
+          commits(last: 1) {
             totalCount
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                  contexts(first: 10) {
+                    nodes {
+                      __typename
+                      ... on CheckRun {
+                        id
+                        name
+                        status
+                        conclusion
+                        detailsUrl
+                      }
+                      ... on StatusContext {
+                        id
+                        context
+                        state
+                        targetUrl
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
           comments {
             totalCount
@@ -171,8 +246,33 @@ export const GET_ALL_PULL_REQUESTS = gql`
             }
           }
           reviewDecision
-          commits {
+          commits(last: 1) {
             totalCount
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                  contexts(first: 10) {
+                    nodes {
+                      __typename
+                      ... on CheckRun {
+                        id
+                        name
+                        status
+                        conclusion
+                        detailsUrl
+                      }
+                      ... on StatusContext {
+                        id
+                        context
+                        state
+                        targetUrl
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
           comments {
             totalCount
@@ -215,8 +315,33 @@ export const GET_ALL_PULL_REQUESTS = gql`
             }
           }
           reviewDecision
-          commits {
+          commits(last: 1) {
             totalCount
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                  contexts(first: 10) {
+                    nodes {
+                      __typename
+                      ... on CheckRun {
+                        id
+                        name
+                        status
+                        conclusion
+                        detailsUrl
+                      }
+                      ... on StatusContext {
+                        id
+                        context
+                        state
+                        targetUrl
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
           comments {
             totalCount

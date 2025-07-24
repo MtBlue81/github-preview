@@ -11,6 +11,7 @@ import { notificationService } from '../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { CIStatusIcon } from '../components/CIStatusIcon';
 
 interface PRWithCategories extends PullRequest {
   categories: Array<{ title: string; icon: string }>;
@@ -259,6 +260,11 @@ export function PullRequestsPage() {
                     </span>
                   ))}
                 </div>
+                <CIStatusIcon
+                  statusCheckRollup={
+                    pr.commits.nodes?.[0]?.commit.statusCheckRollup
+                  }
+                />
               </div>
               <div className='mt-1 flex items-center gap-3 text-xs text-gray-500'>
                 <span className='flex items-center gap-1'>
