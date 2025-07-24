@@ -7,7 +7,6 @@ import {
 import { ApolloProvider } from '@apollo/client';
 import { LoginPage } from './pages/LoginPage';
 import { PullRequestsPage } from './pages/PullRequestsPage';
-import { PullRequestDetailPage } from './pages/PullRequestDetailPage';
 import { IgnoredPRsPage } from './pages/IgnoredPRsPage';
 import { RootLayout } from './components/RootLayout';
 import { githubClient } from './lib/github';
@@ -34,10 +33,6 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <PullRequestsPage />,
-          },
-          {
-            path: 'pr/:owner/:repo/:number',
-            element: <PullRequestDetailPage />,
           },
           {
             path: 'ignored',

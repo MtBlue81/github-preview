@@ -131,10 +131,95 @@ npm run tauri build
 
 - ✅ CI状況を一覧に表示
 - ✅ 手動での再fetchボタンを追加
-- [ ] 詳細表示でのアプリ内ブラウザの利用
+- ✅ 詳細表示でのTauri WebViewブラウザ実装
 - [ ] コメント・レビュー投稿機能
 - [ ] ファイル差分の詳細表示
 - [ ] テスト環境の構築（Vitest + React Testing Library）
+
+## Tauri WebView実装の詳細
+
+### 概要
+PR詳細画面にGitHubの完全なWebインターフェースを統合するため、Tauri WebViewを実装。GitHubのフル機能（コメント投稿、レビュー、差分表示等）を利用可能にした。
+
+### 実装アプローチ
+
+#### 1. 当初の計画: 埋め込み型WebView
+- **目標**: 詳細ページ内にGitHubを直接埋め込み表示
+- **問題**: GitHubが`X-Frame-Options: DENY`を設定
+- **結果**: iframe及び埋め込み型WebViewでの表示が不可能
+
+#### 2. 最終解決策: WebViewWindow（別ウィンドウ）
+- **実装**: PR詳細ページアクセス時に自動で別ウィンドウを開く
+- **利点**: GitHubのフレーム制限を回避
+- **体験**: 詳細ページで状態管理・制御ボタンを提供
+
+### 技術的課題と解決策
+
+#### 権限設定の問題
+**エラー**: `webview.create_webview_window not allowed`
+**解決策**: 
+```json
+// src-tauri/capabilities/default.json & webview.json
+"permissions": [
+  "core:webview:allow-create-webview-window",
+  "core:window:allow-close",
+  "core:window:allow-create",
+  "core:window:allow-show",
+  "core:window:allow-hide"
+]
+```
+
+#### WebView重複エラー
+**エラー**: `a window with label already exists`
+**解決策**:
+- 既存WebViewの強制クリーンアップ
+- タイムスタンプ付きユニークラベル生成
+- コンポーネントアンマウント時の確実なクリーンアップ
+
+#### 無限ループ問題
+**問題**: useEffectの依存配列でWebViewWindow状態による再実行
+**解決策**:
+- 依存配列からwebviewWindow除去
+- useCallbackでイベントハンドラーを最適化
+- 関数の再作成による再実行を防止
+
+### 実装されたファイル
+
+#### コンポーネント
+- `src/components/GitHubWebView.tsx`: WebViewWindow管理
+- `src/components/WebViewContainer.tsx`: WebView制御とナビゲーション
+
+#### 設定ファイル
+- `src-tauri/capabilities/default.json`: メインウィンドウ権限
+- `src-tauri/capabilities/webview.json`: WebViewウィンドウ権限
+- `src-tauri/tauri.conf.json`: capability参照設定
+
+#### GraphQL
+- `src/lib/lightweightQueries.ts`: 軽量PR情報取得（既読管理用）
+
+### 機能
+
+#### WebView制御
+- **自動オープン**: PR詳細ページアクセス時に自動でWebViewを開く
+- **再利用**: 既存WebViewがある場合はフォーカス
+- **リロード**: WebViewの再作成によるリフレッシュ
+- **外部ブラウザ**: フォールバック用の外部ブラウザ起動
+
+#### 統合機能
+- **既読管理**: WebViewロード時の自動既読マーク
+- **キーボードショートカット**: Esc/g（戻る）、←/h（前PR）、→/l（次PR）
+- **ナビゲーション**: PR間移動の維持
+
+### 利点
+1. **完全なGitHub体験**: Webアプリのフル機能を利用
+2. **開発負荷削減**: GitHub UIの独自実装が不要
+3. **最新機能対応**: GitHubのアップデートに自動対応
+4. **セキュリティ**: WebViewによる適切な分離
+
+### 制約
+- **別ウィンドウ**: 埋め込み表示ではなく別ウィンドウでの表示
+- **ウィンドウ管理**: ユーザーがWebViewウィンドウを閉じる可能性
+- **X-Frame-Options**: Webプラットフォームの根本的制限
 
 ## 開発メモ
 
@@ -142,3 +227,4 @@ npm run tauri build
 - GraphQL APIで効率的なデータ取得
 - Tauri設定でmacOS固有の最適化実装済み
 - 透明タイトルバーでネイティブな外観
+- WebView実装でGitHubのフル機能を統合

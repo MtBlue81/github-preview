@@ -15,7 +15,8 @@
       "WebFetch(domain:api.reactrouter.com)",
       "Bash(npm install:*)",
       "Bash(npm run lint)",
-      "Bash(npm run format:*)"
+      "Bash(npm run format:*)",
+      "WebFetch(domain:studio.apollographql.com)"
     ],
     "deny": []
   }

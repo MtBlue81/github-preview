@@ -3,15 +3,15 @@ import { useQuery } from '@apollo/client';
 import { GET_ALL_PULL_REQUESTS } from '../lib/queries';
 import { PullRequest } from '../types/github';
 import { useAuthStore } from '../stores/authStore';
-import { useNavigationStore } from '../stores/navigationStore';
-import { useFocusStore } from '../stores/focusStore';
 import { useIgnoreStore } from '../stores/ignoreStore';
 import { useReadStatusStore } from '../stores/readStatusStore';
 import { notificationService } from '../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
-import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { CIStatusIcon } from '../components/CIStatusIcon';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { Link } from 'react-router-dom';
 
 interface PRWithCategories extends PullRequest {
   categories: Array<{ title: string; icon: string }>;
@@ -19,11 +19,12 @@ interface PRWithCategories extends PullRequest {
 
 export function PullRequestsPage() {
   const { user } = useAuthStore();
-  const { setAllPullRequests, setCurrentPR } = useNavigationStore();
-  const { lastFocusedPRId, clearLastFocusedPR } = useFocusStore();
   const { isIgnored, addIgnoredPR, ignoredPRIds } = useIgnoreStore();
   const { isUnread, markAsRead, getUnreadCount } = useReadStatusStore();
   const [lastUpdated, setLastUpdated] = useState<Date>();
+  const [currentWebView, setCurrentWebView] = useState<WebviewWindow | null>(
+    null
+  );
 
   // 統合クエリで一度にすべてのPRを取得
   const allPullRequestsQuery = useQuery(GET_ALL_PULL_REQUESTS, {
@@ -124,7 +125,6 @@ export function PullRequestsPage() {
   // PRリストが更新されたらナビゲーションストアに保存し、新しい未読を検知
   useEffect(() => {
     if (allPRs.length > 0) {
-      setAllPullRequests(allPRs);
       setLastUpdated(new Date());
 
       // 初回読み込み後、通知権限をリクエスト
@@ -162,25 +162,97 @@ export function PullRequestsPage() {
 
       previousPRsRef.current = allPRs;
     }
-  }, [allPRs, setAllPullRequests, isUnread]);
-
-  // フォーカス復帰処理
-  useEffect(() => {
-    if (lastFocusedPRId && allPRs.length > 0) {
-      const element = document.querySelector(
-        `#pr-${lastFocusedPRId} > a`
-      ) as HTMLAnchorElement;
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        element.focus();
-        clearLastFocusedPR();
-      }
-    }
-  }, [lastFocusedPRId, clearLastFocusedPR, allPRs]);
+  }, [allPRs, isUnread]);
 
   const unreadCount = useMemo(() => {
     return getUnreadCount(allPRs);
   }, [getUnreadCount, allPRs]);
+
+  // WebViewを一覧上に開く関数
+  const openWebViewOverlay = async (pr: PullRequest) => {
+    try {
+      // 既存のWebViewを強制的にクリーンアップ
+      if (currentWebView) {
+        console.log('Closing existing WebView...');
+        try {
+          await currentWebView.close();
+        } catch (e) {
+          console.warn('Error closing existing WebView:', e);
+        }
+        setCurrentWebView(null);
+        // 少し待ってから新しいWebViewを作成
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      // 既読としてマーク
+      markAsRead(pr.id, pr.updatedAt);
+
+      const githubUrl = `https://github.com/${pr.repository.owner.login}/${pr.repository.name}/pull/${pr.number}`;
+      const webviewLabel = `pr-overlay-${pr.repository.owner.login}-${pr.repository.name}-${pr.number}-${Date.now()}`;
+
+      // メインウィンドウの位置とサイズを取得
+      const mainWindow = getCurrentWindow();
+      const windowPosition = await mainWindow.outerPosition();
+      const windowSize = await mainWindow.outerSize();
+
+      // WebViewを一覧上に重なる位置に配置
+      const overlayWidth = Math.min(1000, windowSize.width - 100);
+      const overlayHeight = Math.min(700, windowSize.height - 100);
+      const overlayX = windowPosition.x + (windowSize.width - overlayWidth) / 2;
+      const overlayY = windowPosition.y + 50; // 少し上部にオフセット
+
+      const webview = new WebviewWindow(webviewLabel, {
+        url: githubUrl,
+        title: `GitHub PR #${pr.number} - ${pr.repository.owner.login}/${pr.repository.name}`,
+        x: Math.round(overlayX),
+        y: Math.round(overlayY),
+        width: overlayWidth,
+        height: overlayHeight,
+        visible: false,
+        resizable: true,
+        maximizable: true,
+        minimizable: true,
+        closable: true,
+        decorations: true,
+        alwaysOnTop: true, // 一覧の上に表示
+        skipTaskbar: false,
+      });
+
+      setCurrentWebView(webview);
+
+      // WebView作成成功時
+      webview.once('tauri://created', async () => {
+        await webview.show();
+
+        // WebView内でキーボードショートカットを有効にするために
+        // WebViewのデフォルトキーボードハンドリングを利用
+        // （JavaScript注入の代わりに、メインアプリ側でグローバルキーボード監視を強化）
+
+        console.log(`Opened PR #${pr.number} in overlay WebView`);
+      });
+
+      // WebViewが閉じられた時
+      webview.once('tauri://close-requested', () => {
+        setCurrentWebView(null);
+        console.log('WebView overlay closed');
+        webview.destroy();
+      });
+
+      // WebViewが破棄された時
+      webview.once('tauri://destroyed', () => {
+        setCurrentWebView(null);
+        console.log('WebView overlay destroyed');
+      });
+
+      // エラーハンドリング
+      webview.once('tauri://error', e => {
+        console.error('WebView overlay error:', e);
+        setCurrentWebView(null);
+      });
+    } catch (error) {
+      console.error('Failed to open WebView overlay:', error);
+    }
+  };
 
   if (loading && allPRsWithCategories.length === 0) {
     return (
@@ -228,13 +300,9 @@ export function PullRequestsPage() {
           isItemUnread ? 'bg-blue-50/30' : ''
         }`}
       >
-        <Link
-          to={`/pr/${pr.repository.owner.login}/${pr.repository.name}/${pr.number}`}
-          className='block px-4 py-3 border-b last:border-b-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset'
-          onClick={() => {
-            setCurrentPR(pr);
-            markAsRead(pr.id, pr.updatedAt);
-          }}
+        <button
+          className='w-full text-left block px-4 py-3 border-b last:border-b-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset hover:bg-gray-50'
+          onClick={() => openWebViewOverlay(pr)}
         >
           <div className='flex items-start justify-between'>
             <div className='flex-1 min-w-0'>
@@ -333,7 +401,7 @@ export function PullRequestsPage() {
               ))}
             </div>
           )}
-        </Link>
+        </button>
         <button
           onClick={e => handleIgnorePR(e, pr)}
           className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded bg-gray-200 hover:bg-red-200 text-gray-600 hover:text-red-700'
@@ -371,26 +439,28 @@ export function PullRequestsPage() {
           <div>
             <h1 className='text-2xl font-bold text-gray-900'>Pull Requests</h1>
           </div>
-          <Link
-            to='/ignored'
-            className='px-4 py-2 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-2'
-          >
-            <svg
-              className='w-4 h-4'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-              xmlns='http://www.w3.org/2000/svg'
+          <div className='flex items-center space-x-3'>
+            <Link
+              to='/ignored'
+              className='px-4 py-2 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-2'
             >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 16.121m6.878-6.243L16.121 3M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
-              />
-            </svg>
-            無視したPR ({ignoredPRIds.size})
-          </Link>
+              <svg
+                className='w-4 h-4'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+                xmlns='http://www.w3.org/2000/svg'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 16.121m6.878-6.243L16.121 3M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z'
+                />
+              </svg>
+              無視したPR ({ignoredPRIds.size})
+            </Link>
+          </div>
         </div>
 
         <div className='bg-white shadow-sm rounded-lg overflow-hidden'>
