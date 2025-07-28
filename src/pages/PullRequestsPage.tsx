@@ -164,6 +164,36 @@ export function PullRequestsPage() {
     }
   }, [allPRs, isUnread]);
 
+  // メインウィンドウフォーカス時にWebViewを閉じる
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+
+    const setupFocusListener = async () => {
+      try {
+        const mainWindow = getCurrentWindow();
+        unlisten = await mainWindow.onFocusChanged(({ payload: focused }: { payload: boolean }) => {
+          if (focused && currentWebView) {
+            console.log('Main window focused, closing WebView overlay');
+            currentWebView.close().catch(error => {
+              console.error('Failed to close WebView on focus:', error);
+            });
+            setCurrentWebView(null);
+          }
+        });
+      } catch (error) {
+        console.warn('Failed to setup focus listener:', error);
+      }
+    };
+
+    setupFocusListener();
+
+    return () => {
+      if (unlisten) {
+        unlisten();
+      }
+    };
+  }, [currentWebView]);
+
   const unreadCount = useMemo(() => {
     return getUnreadCount(allPRs);
   }, [getUnreadCount, allPRs]);
@@ -302,7 +332,24 @@ export function PullRequestsPage() {
       >
         <button
           className='w-full text-left block px-4 py-3 border-b last:border-b-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset hover:bg-gray-50'
-          onClick={() => openWebViewOverlay(pr)}
+          onClick={async (e) => {
+            // cmd/ctrl + click で外部ブラウザで開く
+            if (e.metaKey || e.ctrlKey) {
+              e.preventDefault();
+              const githubUrl = `https://github.com/${pr.repository.owner.login}/${pr.repository.name}/pull/${pr.number}`;
+              try {
+                const { openUrl } = await import('@tauri-apps/plugin-opener');
+                await openUrl(githubUrl);
+                // 既読としてマーク
+                markAsRead(pr.id, pr.updatedAt);
+              } catch (error) {
+                console.error('Failed to open in browser:', error);
+              }
+            } else {
+              // 通常クリックはWebViewオーバーレイ
+              openWebViewOverlay(pr);
+            }
+          }}
         >
           <div className='flex items-start justify-between'>
             <div className='flex-1 min-w-0'>

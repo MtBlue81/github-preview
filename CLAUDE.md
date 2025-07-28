@@ -132,6 +132,8 @@ npm run tauri build
 - ✅ CI状況を一覧に表示
 - ✅ 手動での再fetchボタンを追加
 - ✅ 詳細表示でのTauri WebViewブラウザ実装
+- [ ] cmd + clickで外部ブラウザで開く
+- [ ] 一覧フォーカス時にWebViewウィンドウを閉じる
 - [ ] コメント・レビュー投稿機能
 - [ ] ファイル差分の詳細表示
 - [ ] テスト環境の構築（Vitest + React Testing Library）
