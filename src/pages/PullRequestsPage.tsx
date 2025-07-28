@@ -171,15 +171,17 @@ export function PullRequestsPage() {
     const setupFocusListener = async () => {
       try {
         const mainWindow = getCurrentWindow();
-        unlisten = await mainWindow.onFocusChanged(({ payload: focused }: { payload: boolean }) => {
-          if (focused && currentWebView) {
-            console.log('Main window focused, closing WebView overlay');
-            currentWebView.close().catch(error => {
-              console.error('Failed to close WebView on focus:', error);
-            });
-            setCurrentWebView(null);
+        unlisten = await mainWindow.onFocusChanged(
+          ({ payload: focused }: { payload: boolean }) => {
+            if (focused && currentWebView) {
+              console.log('Main window focused, closing WebView overlay');
+              currentWebView.close().catch(error => {
+                console.error('Failed to close WebView on focus:', error);
+              });
+              setCurrentWebView(null);
+            }
           }
-        });
+        );
       } catch (error) {
         console.warn('Failed to setup focus listener:', error);
       }
@@ -332,7 +334,7 @@ export function PullRequestsPage() {
       >
         <button
           className='w-full text-left block px-4 py-3 border-b last:border-b-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset hover:bg-gray-50'
-          onClick={async (e) => {
+          onClick={async e => {
             // cmd/ctrl + click で外部ブラウザで開く
             if (e.metaKey || e.ctrlKey) {
               e.preventDefault();
