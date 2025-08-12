@@ -74,6 +74,7 @@ export const GET_PULL_REQUESTS = gql`
               color
             }
           }
+          mergeable
         }
       }
     }
@@ -156,6 +157,7 @@ export const GET_ALL_PULL_REQUESTS = gql`
               color
             }
           }
+          mergeable
         }
       }
     }
@@ -221,6 +223,7 @@ export const GET_ALL_PULL_REQUESTS = gql`
               color
             }
           }
+          mergeable
         }
       }
     }
@@ -286,6 +289,7 @@ export const GET_ALL_PULL_REQUESTS = gql`
               color
             }
           }
+          mergeable
         }
       }
     }
@@ -355,6 +359,7 @@ export const GET_ALL_PULL_REQUESTS = gql`
               color
             }
           }
+          mergeable
         }
       }
     }

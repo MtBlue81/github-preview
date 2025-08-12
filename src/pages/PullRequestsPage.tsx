@@ -367,6 +367,14 @@ export function PullRequestsPage() {
                     Draft
                   </span>
                 )}
+                {pr.mergeable === 'CONFLICTING' && (
+                  <span
+                    className='text-red-500 flex-shrink-0'
+                    title='マージコンフリクトあり'
+                  >
+                    ⚠️
+                  </span>
+                )}
                 <h4
                   className={`text-sm font-medium truncate ${
                     isItemUnread

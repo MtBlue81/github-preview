@@ -82,6 +82,7 @@ export interface PullRequest {
       color: string;
     }>;
   };
+  mergeable?: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN';
 }
 
 export interface FileNode {
