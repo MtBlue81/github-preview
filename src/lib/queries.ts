@@ -87,6 +87,8 @@ export const GET_ALL_PULL_REQUESTS = gql`
     $assigneeQuery: String!
     $mentionsQuery: String!
     $reviewRequestedQuery: String!
+    $reviewedQuery: String!
+    $commentedQuery: String!
   ) {
     rateLimit {
       limit
@@ -298,6 +300,138 @@ export const GET_ALL_PULL_REQUESTS = gql`
       type: ISSUE
       first: 50
     ) {
+      nodes {
+        ... on PullRequest {
+          id
+          number
+          title
+          url
+          state
+          createdAt
+          updatedAt
+          isDraft
+          author {
+            login
+            avatarUrl
+          }
+          repository {
+            name
+            owner {
+              login
+            }
+          }
+          reviewDecision
+          commits(last: 1) {
+            totalCount
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                  contexts(first: 10) {
+                    nodes {
+                      __typename
+                      ... on CheckRun {
+                        id
+                        name
+                        status
+                        conclusion
+                        detailsUrl
+                      }
+                      ... on StatusContext {
+                        id
+                        context
+                        state
+                        targetUrl
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          comments {
+            totalCount
+          }
+          reviews {
+            totalCount
+          }
+          labels(first: 10) {
+            nodes {
+              name
+              color
+            }
+          }
+          mergeable
+        }
+      }
+    }
+    reviewed: search(query: $reviewedQuery, type: ISSUE, first: 50) {
+      nodes {
+        ... on PullRequest {
+          id
+          number
+          title
+          url
+          state
+          createdAt
+          updatedAt
+          isDraft
+          author {
+            login
+            avatarUrl
+          }
+          repository {
+            name
+            owner {
+              login
+            }
+          }
+          reviewDecision
+          commits(last: 1) {
+            totalCount
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                  contexts(first: 10) {
+                    nodes {
+                      __typename
+                      ... on CheckRun {
+                        id
+                        name
+                        status
+                        conclusion
+                        detailsUrl
+                      }
+                      ... on StatusContext {
+                        id
+                        context
+                        state
+                        targetUrl
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          comments {
+            totalCount
+          }
+          reviews {
+            totalCount
+          }
+          labels(first: 10) {
+            nodes {
+              name
+              color
+            }
+          }
+          mergeable
+        }
+      }
+    }
+    commented: search(query: $commentedQuery, type: ISSUE, first: 50) {
       nodes {
         ... on PullRequest {
           id

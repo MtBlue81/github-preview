@@ -45,7 +45,7 @@ Tauri + React + TypeScript + Tailwind CSSで構築されたMac用デスクトッ
 
 ### PR表示機能
 
-- ✅ カテゴリアイコン表示（💬 メンション、📌 アサイン、👀 レビュー依頼、✏️ 作成）
+- ✅ カテゴリアイコン表示（💬 メンション、📌 アサイン、👀 レビュー依頼、💭 レビュー済み、📝 コメント済み、✏️ 作成）
 - ✅ 更新日時での自動ソート（新しい順）
 - ✅ PRステータス表示（Draft、Approved、Changes Requested）
 - ✅ ラベル表示（色付き）
@@ -87,7 +87,7 @@ npm run tauri build
 
 1. [GitHub Settings](https://github.com/settings/tokens/new?scopes=repo,read:user) でPersonal Access Tokenを作成
 2. アプリ起動後、トークンでログイン
-3. 自分に関係するすべてのPRが統合リストで表示される
+3. 自分に関係するすべてのPRが統合リストで表示される（メンション、アサイン、レビュー依頼、レビュー済み、コメント済み、作成）
 4. PRクリックで詳細画面へ
 5. API Rate Limit状況をヘッダーで確認可能
 
@@ -95,7 +95,7 @@ npm run tauri build
 
 ### GraphQL API統合
 
-- `GET_ALL_PULL_REQUESTS`: 4つの検索条件を1つのクエリで並列実行
+- `GET_ALL_PULL_REQUESTS`: 6つの検索条件を1つのクエリで並列実行（authored、assigned、mentioned、reviewRequested、reviewed、commented）
 - Rate Limit情報を同一レスポンスに含める
 - 1分間隔でのポーリング更新
 
@@ -109,7 +109,7 @@ npm run tauri build
 
 ### データフロー
 
-1. GraphQLクエリで4カテゴリのPRを同時取得
+1. GraphQLクエリで6カテゴリのPRを同時取得
 2. 重複除外・無視PR除外・カテゴリ統合処理
 3. 更新日時でソート
 4. 未読検知・通知処理
@@ -132,8 +132,10 @@ npm run tauri build
 - ✅ CI状況を一覧に表示
 - ✅ 手動での再fetchボタンを追加
 - ✅ 詳細表示でのTauri WebViewブラウザ実装
-- [ ] cmd + clickで外部ブラウザで開く
-- [ ] 一覧フォーカス時にWebViewウィンドウを閉じる
+- ✅ cmd + clickで外部ブラウザで開く
+- ✅ 一覧フォーカス時にWebViewウィンドウを閉じる
+- ✅ レビューやコメントなど自分がリアクションしたPRも一覧で取得
+- [ ] 取得対象にignore条件をつけられるように(branchやlabelなど)
 - [ ] コメント・レビュー投稿機能
 - [ ] ファイル差分の詳細表示
 - [ ] テスト環境の構築（Vitest + React Testing Library）

@@ -33,6 +33,8 @@ export function PullRequestsPage() {
       assigneeQuery: `is:pr is:open assignee:${user?.login} sort:updated-desc`,
       mentionsQuery: `is:pr is:open mentions:${user?.login} sort:updated-desc`,
       reviewRequestedQuery: `is:pr is:open review-requested:${user?.login} sort:updated-desc`,
+      reviewedQuery: `is:pr is:open reviewed-by:${user?.login} sort:updated-desc`,
+      commentedQuery: `is:pr is:open commenter:${user?.login} sort:updated-desc`,
     },
     pollInterval: 60000,
   });
@@ -67,6 +69,16 @@ export function PullRequestsPage() {
         prs:
           allPullRequestsQuery.data?.reviewRequested?.nodes?.filter(Boolean) ||
           [],
+      },
+      {
+        title: 'レビュー済み',
+        icon: '💭',
+        prs: allPullRequestsQuery.data?.reviewed?.nodes?.filter(Boolean) || [],
+      },
+      {
+        title: 'コメント済み',
+        icon: '📝',
+        prs: allPullRequestsQuery.data?.commented?.nodes?.filter(Boolean) || [],
       },
       {
         title: '作成',
@@ -109,6 +121,8 @@ export function PullRequestsPage() {
     allPullRequestsQuery.data?.reviewRequested?.nodes,
     allPullRequestsQuery.data?.assigned?.nodes,
     allPullRequestsQuery.data?.mentioned?.nodes,
+    allPullRequestsQuery.data?.reviewed?.nodes,
+    allPullRequestsQuery.data?.commented?.nodes,
     isIgnored,
     ignoredPRIds,
   ]);
