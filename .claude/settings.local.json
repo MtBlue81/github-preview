@@ -16,7 +16,17 @@
       "Bash(npm install:*)",
       "Bash(npm run lint)",
       "Bash(npm run format:*)",
-      "WebFetch(domain:studio.apollographql.com)"
+      "WebFetch(domain:studio.apollographql.com)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:*)",
+      "Bash(grep:*)",
+      "Bash(mcp list:*)",
+      "mcp__serena__find_file",
+      "mcp__serena__get_symbols_overview",
+      "mcp__serena__find_symbol",
+      "mcp__serena__search_for_pattern",
+      "WebSearch",
+      "Bash(npx knip:*)"
     ],
     "deny": []
   }
