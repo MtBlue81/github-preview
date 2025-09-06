@@ -14,10 +14,8 @@ import { FilterSettingsModal } from '../components/FilterSettingsModal';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Link } from 'react-router-dom';
+import { deduplicatePullRequests, buildGitHubSearchQuery, PRWithCategories } from '../lib/prUtils';
 
-interface PRWithCategories extends PullRequest {
-  categories: Array<{ title: string; icon: string }>;
-}
 
 export function PullRequestsPage() {
   const { user } = useAuthStore();
@@ -31,14 +29,15 @@ export function PullRequestsPage() {
   );
 
   // 統合クエリで一度にすべてのPRを取得
+  const username = user?.login || '';
   const allPullRequestsQuery = useQuery(GET_ALL_PULL_REQUESTS, {
     variables: {
-      authorQuery: `is:pr is:open author:${user?.login} sort:updated-desc`,
-      assigneeQuery: `is:pr is:open assignee:${user?.login} sort:updated-desc`,
-      mentionsQuery: `is:pr is:open mentions:${user?.login} sort:updated-desc`,
-      reviewRequestedQuery: `is:pr is:open review-requested:${user?.login} sort:updated-desc`,
-      reviewedQuery: `is:pr is:open reviewed-by:${user?.login} sort:updated-desc`,
-      commentedQuery: `is:pr is:open commenter:${user?.login} sort:updated-desc`,
+      authorQuery: buildGitHubSearchQuery(username, 'author'),
+      assigneeQuery: buildGitHubSearchQuery(username, 'assignee'),
+      mentionsQuery: buildGitHubSearchQuery(username, 'mentions'),
+      reviewRequestedQuery: buildGitHubSearchQuery(username, 'review-requested'),
+      reviewedQuery: buildGitHubSearchQuery(username, 'reviewed-by'),
+      commentedQuery: buildGitHubSearchQuery(username, 'commenter'),
     },
     pollInterval: 60000,
   });
@@ -53,8 +52,6 @@ export function PullRequestsPage() {
 
   // PRとカテゴリ情報を統合した配列を作成
   const allPRsWithCategories = useMemo(() => {
-    const prMap = new Map<string, PRWithCategories>();
-
     // 各カテゴリのPRを処理
     const categories = [
       {
@@ -91,40 +88,7 @@ export function PullRequestsPage() {
       },
     ];
 
-    // 各カテゴリのPRをマップに追加
-    categories.forEach(category => {
-      category.prs.forEach((pr: PullRequest) => {
-        const prKey = `${pr.repository.owner.login}:${pr.repository.name}:${pr.number}`;
-        if (isIgnored(prKey)) return;
-
-        // 除外ラベルチェック
-        const hasExcludedLabel = pr.labels.nodes.some(label =>
-          excludedLabels.has(label.name)
-        );
-        if (hasExcludedLabel) return;
-
-        if (prMap.has(pr.id)) {
-          // 既存のPRにカテゴリを追加
-          const existingPR = prMap.get(pr.id)!;
-          existingPR.categories.push({
-            title: category.title,
-            icon: category.icon,
-          });
-        } else {
-          // 新しいPRを追加
-          prMap.set(pr.id, {
-            ...pr,
-            categories: [{ title: category.title, icon: category.icon }],
-          });
-        }
-      });
-    });
-
-    // 更新日時でソート（新しい順）
-    return Array.from(prMap.values()).sort(
-      (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
+    return deduplicatePullRequests(categories, isIgnored, excludedLabels);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     allPullRequestsQuery.data?.authored?.nodes,
