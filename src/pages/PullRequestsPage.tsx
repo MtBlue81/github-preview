@@ -5,10 +5,12 @@ import { PullRequest } from '../types/github';
 import { useAuthStore } from '../stores/authStore';
 import { useIgnoreStore } from '../stores/ignoreStore';
 import { useReadStatusStore } from '../stores/readStatusStore';
+import { useFilterStore } from '../stores/filterStore';
 import { notificationService } from '../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 import { Layout } from '../components/Layout';
 import { CIStatusIcon } from '../components/CIStatusIcon';
+import { FilterSettingsModal } from '../components/FilterSettingsModal';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Link } from 'react-router-dom';
@@ -21,7 +23,9 @@ export function PullRequestsPage() {
   const { user } = useAuthStore();
   const { isIgnored, addIgnoredPR, ignoredPRIds } = useIgnoreStore();
   const { isUnread, markAsRead, getUnreadCount } = useReadStatusStore();
+  const { excludedLabels } = useFilterStore();
   const [lastUpdated, setLastUpdated] = useState<Date>();
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [currentWebView, setCurrentWebView] = useState<WebviewWindow | null>(
     null
   );
@@ -93,6 +97,12 @@ export function PullRequestsPage() {
         const prKey = `${pr.repository.owner.login}:${pr.repository.name}:${pr.number}`;
         if (isIgnored(prKey)) return;
 
+        // 除外ラベルチェック
+        const hasExcludedLabel = pr.labels.nodes.some(label =>
+          excludedLabels.has(label.name)
+        );
+        if (hasExcludedLabel) return;
+
         if (prMap.has(pr.id)) {
           // 既存のPRにカテゴリを追加
           const existingPR = prMap.get(pr.id)!;
@@ -125,12 +135,43 @@ export function PullRequestsPage() {
     allPullRequestsQuery.data?.commented?.nodes,
     isIgnored,
     ignoredPRIds,
+    excludedLabels,
   ]);
 
   // 全PRのフラットなリストを作成（ナビゲーション用）
   const allPRs = useMemo(() => {
     return allPRsWithCategories;
   }, [allPRsWithCategories]);
+
+  // 使用されているラベルを収集
+  const availableLabels = useMemo(() => {
+    const labelsSet = new Set<string>();
+    const allPRData = [
+      ...(allPullRequestsQuery.data?.authored?.nodes || []),
+      ...(allPullRequestsQuery.data?.assigned?.nodes || []),
+      ...(allPullRequestsQuery.data?.mentioned?.nodes || []),
+      ...(allPullRequestsQuery.data?.reviewRequested?.nodes || []),
+      ...(allPullRequestsQuery.data?.reviewed?.nodes || []),
+      ...(allPullRequestsQuery.data?.commented?.nodes || []),
+    ];
+    
+    allPRData.forEach((pr: PullRequest | null) => {
+      if (pr && pr.labels && pr.labels.nodes) {
+        pr.labels.nodes.forEach(label => {
+          labelsSet.add(label.name);
+        });
+      }
+    });
+    
+    return Array.from(labelsSet).sort();
+  }, [
+    allPullRequestsQuery.data?.authored?.nodes,
+    allPullRequestsQuery.data?.assigned?.nodes,
+    allPullRequestsQuery.data?.mentioned?.nodes,
+    allPullRequestsQuery.data?.reviewRequested?.nodes,
+    allPullRequestsQuery.data?.reviewed?.nodes,
+    allPullRequestsQuery.data?.commented?.nodes,
+  ]);
 
   // 以前のPRリストを保持
   const previousPRsRef = useRef<PullRequest[]>([]);
@@ -504,6 +545,7 @@ export function PullRequestsPage() {
       loading={loading}
       onRefresh={handleRefresh}
       lastUpdated={lastUpdated}
+      onFilterClick={() => setIsFilterModalOpen(true)}
     >
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <div className='mb-6 flex items-center justify-between'>
@@ -565,6 +607,11 @@ export function PullRequestsPage() {
           )}
         </div>
       </div>
+      <FilterSettingsModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        availableLabels={availableLabels}
+      />
     </Layout>
   );
 }

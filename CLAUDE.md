@@ -34,6 +34,7 @@ Tauri + React + TypeScript + Tailwind CSSで構築されたMac用デスクトッ
 
 - ✅ 重複PR自動除外機能
 - ✅ PR無視機能（特定PRを一覧から除外）
+- ✅ ラベルフィルタ機能（特定ラベルのPRを除外）
 - ✅ 未既読管理機能（未読バッジ・カウント表示）
 - ✅ システム通知機能（新しいPRや更新の通知）
 
@@ -103,6 +104,7 @@ npm run tauri build
 
 - `authStore`: 認証状態管理
 - `ignoreStore`: PR無視機能
+- `filterStore`: ラベルフィルタ管理
 - `readStatusStore`: 既読/未読管理
 - `navigationStore`: ナビゲーション状態
 - `focusStore`: フォーカス復帰機能
@@ -135,7 +137,8 @@ npm run tauri build
 - ✅ cmd + clickで外部ブラウザで開く
 - ✅ 一覧フォーカス時にWebViewウィンドウを閉じる
 - ✅ レビューやコメントなど自分がリアクションしたPRも一覧で取得
-- [ ] 取得対象にignore条件をつけられるように(branchやlabelなど)
+- ✅ ラベルによるフィルタ機能（除外ラベル設定）
+- [ ] 取得対象にignore条件をつけられるように(branch条件など)
 - [ ] コメント・レビュー投稿機能
 - [ ] ファイル差分の詳細表示
 - [ ] テスト環境の構築（Vitest + React Testing Library）
