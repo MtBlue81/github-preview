@@ -154,7 +154,7 @@ export function PullRequestsPage() {
       ...(allPullRequestsQuery.data?.reviewed?.nodes || []),
       ...(allPullRequestsQuery.data?.commented?.nodes || []),
     ];
-    
+
     allPRData.forEach((pr: PullRequest | null) => {
       if (pr && pr.labels && pr.labels.nodes) {
         pr.labels.nodes.forEach(label => {
@@ -162,7 +162,7 @@ export function PullRequestsPage() {
         });
       }
     });
-    
+
     return Array.from(labelsSet).sort();
   }, [
     allPullRequestsQuery.data?.authored?.nodes,

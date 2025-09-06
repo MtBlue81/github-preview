@@ -5,6 +5,8 @@ import { useIgnoreStore } from '../stores/ignoreStore';
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { PullRequestDetail } from '../types/github';
 
 interface IgnoredPRInfo {
@@ -20,6 +22,9 @@ interface IgnoredPRInfo {
 export function IgnoredPRsPage() {
   const { getIgnoredPRs, removeIgnoredPR, clearAllIgnored } = useIgnoreStore();
   const [ignoredPRs, setIgnoredPRs] = useState<IgnoredPRInfo[]>([]);
+  const [currentWebView, setCurrentWebView] = useState<WebviewWindow | null>(
+    null
+  );
 
   useEffect(() => {
     const ignoredIds = getIgnoredPRs();
@@ -51,6 +56,101 @@ export function IgnoredPRsPage() {
   const handleClearAll = () => {
     clearAllIgnored();
     setIgnoredPRs([]);
+  };
+
+  const openWebViewOverlay = async (pr: PullRequestDetail) => {
+    try {
+      // 既存のWebViewを強制的にクリーンアップ
+      if (currentWebView) {
+        console.log('Closing existing WebView...');
+        try {
+          await currentWebView.close();
+        } catch (e) {
+          console.warn('Error closing existing WebView:', e);
+        }
+        setCurrentWebView(null);
+        // 少し待ってから新しいWebViewを作成
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      const githubUrl = `https://github.com/${pr.repository.owner.login}/${pr.repository.name}/pull/${pr.number}`;
+      const webviewLabel = `pr-overlay-${pr.repository.owner.login}-${pr.repository.name}-${pr.number}-${Date.now()}`;
+
+      // メインウィンドウの位置とサイズを取得
+      const mainWindow = getCurrentWindow();
+      const windowPosition = await mainWindow.outerPosition();
+      const windowSize = await mainWindow.outerSize();
+
+      // WebViewを一覧上に重なる位置に配置
+      const overlayWidth = Math.min(1000, windowSize.width - 100);
+      const overlayHeight = Math.min(700, windowSize.height - 100);
+      const overlayX = windowPosition.x + (windowSize.width - overlayWidth) / 2;
+      const overlayY = windowPosition.y + 50; // 少し上部にオフセット
+
+      const webview = new WebviewWindow(webviewLabel, {
+        url: githubUrl,
+        title: `GitHub PR #${pr.number} - ${pr.repository.owner.login}/${pr.repository.name}`,
+        x: Math.round(overlayX),
+        y: Math.round(overlayY),
+        width: overlayWidth,
+        height: overlayHeight,
+        visible: false,
+        resizable: true,
+        maximizable: true,
+        minimizable: true,
+        closable: true,
+        decorations: true,
+        alwaysOnTop: true, // 一覧の上に表示
+        skipTaskbar: false,
+      });
+
+      setCurrentWebView(webview);
+
+      // WebView作成成功時
+      webview.once('tauri://created', async () => {
+        await webview.show();
+        console.log(`Opened PR #${pr.number} in overlay WebView`);
+      });
+
+      // WebViewが閉じられた時
+      webview.once('tauri://close-requested', () => {
+        setCurrentWebView(null);
+        console.log('WebView overlay closed');
+        webview.destroy();
+      });
+
+      // WebViewが破棄された時
+      webview.once('tauri://destroyed', () => {
+        setCurrentWebView(null);
+        console.log('WebView overlay destroyed');
+      });
+
+      // エラーハンドリング
+      webview.once('tauri://error', e => {
+        console.error('WebView overlay error:', e);
+        setCurrentWebView(null);
+      });
+    } catch (error) {
+      console.error('Failed to open WebView overlay:', error);
+    }
+  };
+
+  const handlePRClick = async (
+    event: React.MouseEvent,
+    pr: PullRequestDetail
+  ) => {
+    event.preventDefault();
+    const isCmdClick = event.metaKey || event.ctrlKey;
+
+    if (isCmdClick) {
+      // Cmd+Click: 外部ブラウザで開く
+      const githubUrl = `https://github.com/${pr.repository.owner.login}/${pr.repository.name}/pull/${pr.number}`;
+      const { openUrl } = await import('@tauri-apps/plugin-opener');
+      await openUrl(githubUrl);
+    } else {
+      // 通常クリック: WebViewで開く
+      openWebViewOverlay(pr);
+    }
   };
 
   return (
@@ -103,6 +203,7 @@ export function IgnoredPRsPage() {
                   key={prInfo.prId}
                   prInfo={prInfo}
                   onRemove={handleRemoveIgnore}
+                  onPRClick={handlePRClick}
                 />
               ))}
             </div>
@@ -125,9 +226,10 @@ export function IgnoredPRsPage() {
 interface IgnoredPRItemProps {
   prInfo: IgnoredPRInfo;
   onRemove: (prId: string) => void;
+  onPRClick: (event: React.MouseEvent, pr: PullRequestDetail) => void;
 }
 
-function IgnoredPRItem({ prInfo, onRemove }: IgnoredPRItemProps) {
+function IgnoredPRItem({ prInfo, onRemove, onPRClick }: IgnoredPRItemProps) {
   const { data, loading, error } = useQuery(GET_PULL_REQUEST_DETAIL, {
     variables: {
       owner: prInfo.owner,
@@ -181,12 +283,14 @@ function IgnoredPRItem({ prInfo, onRemove }: IgnoredPRItemProps) {
                 Draft
               </span>
             )}
-            <Link
-              to={`/pr/${pr.repository.owner.login}/${pr.repository.name}/${pr.number}`}
-              className='text-sm font-medium text-blue-600 hover:text-blue-800 truncate'
+            <a
+              href={`https://github.com/${pr.repository.owner.login}/${pr.repository.name}/pull/${pr.number}`}
+              onClick={e => onPRClick(e, pr)}
+              className='text-sm font-medium text-blue-600 hover:text-blue-800 truncate cursor-pointer'
+              title='Cmd+Click で外部ブラウザで開く'
             >
               {pr.title}
-            </Link>
+            </a>
           </div>
           <div className='mt-1 text-xs text-gray-600'>
             {pr.repository.owner.login}/{pr.repository.name} #{pr.number}
