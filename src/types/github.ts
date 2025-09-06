@@ -118,8 +118,6 @@ export interface CommentNode {
   createdAt: string;
 }
 
-export type ConversationItem = ReviewNode | CommentNode;
-
 export interface RateLimit {
   limit: number;
   remaining: number;

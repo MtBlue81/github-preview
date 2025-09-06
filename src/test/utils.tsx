@@ -2,7 +2,6 @@ import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { MockedProvider, MockedResponse } from '@apollo/client/testing';
-import { act } from 'react';
 
 // テスト用のApollo Clientプロバイダーラッパー
 interface TestProvidersProps {
@@ -89,13 +88,6 @@ export const mockRateLimit = {
   used: 200,
   cost: 1,
   resetAt: '2024-01-01T01:00:00Z',
-};
-
-// 共通のテストユーティリティ
-export const waitForLoadingToFinish = () => {
-  return act(async () => {
-    await new Promise(resolve => setTimeout(resolve, 0));
-  });
 };
 
 // re-export everything

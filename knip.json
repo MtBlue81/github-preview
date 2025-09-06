@@ -1,0 +1,39 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/main.tsx"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}"
+  ],
+  "ignore": [
+    "dist/**",
+    "node_modules/**",
+    "src-tauri/**",
+    "**/*.test.{ts,tsx}",
+    "**/*.spec.{ts,tsx}",
+    "vite.config.ts",
+    "tailwind.config.js",
+    "postcss.config.js"
+  ],
+  "ignoreDependencies": [],
+  "ignoreExportsUsedInFile": true,
+  "webpack": false,
+  "typescript": {
+    "config": "tsconfig.json"
+  },
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "devDependencies": "error",
+    "unlisted": "error",
+    "binaries": "error",
+    "unresolved": "error",
+    "exports": "error",
+    "types": "error",
+    "nsExports": "error",
+    "classMembers": "error",
+    "duplicates": "error",
+    "enumMembers": "error"
+  }
+}
