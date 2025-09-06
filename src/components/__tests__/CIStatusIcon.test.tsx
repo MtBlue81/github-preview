@@ -40,12 +40,22 @@ describe('CIStatusIcon', () => {
     it('失敗アイコンと赤色のスタイルを表示する', () => {
       const statusCheckRollup: StatusCheckRollup = {
         state: 'FAILURE',
-        contexts: { nodes: [] },
+        contexts: {
+          nodes: [
+            {
+              __typename: 'CheckRun',
+              id: 'check1',
+              name: 'failed-check',
+              status: 'COMPLETED',
+              conclusion: 'FAILURE',
+            },
+          ],
+        },
       };
 
       render(<CIStatusIcon statusCheckRollup={statusCheckRollup} />);
 
-      const icon = screen.getByTitle('No checks');
+      const icon = screen.getByTitle('1 failed');
       expect(icon).toBeInTheDocument();
       expect(icon).toHaveClass('text-red-600');
     });
@@ -72,12 +82,22 @@ describe('CIStatusIcon', () => {
     it('進行中アイコンと黄色のスタイルを表示する', () => {
       const statusCheckRollup: StatusCheckRollup = {
         state: 'PENDING',
-        contexts: { nodes: [] },
+        contexts: {
+          nodes: [
+            {
+              __typename: 'CheckRun',
+              id: 'check1',
+              name: 'pending-check',
+              status: 'IN_PROGRESS',
+              conclusion: null,
+            },
+          ],
+        },
       };
 
       render(<CIStatusIcon statusCheckRollup={statusCheckRollup} />);
 
-      const icon = screen.getByTitle('No checks');
+      const icon = screen.getByTitle('1 pending');
       expect(icon).toBeInTheDocument();
       expect(icon).toHaveClass('text-yellow-600');
     });
@@ -85,64 +105,110 @@ describe('CIStatusIcon', () => {
     it('PENDING状態でスピナーアイコンが表示される', () => {
       const statusCheckRollup: StatusCheckRollup = {
         state: 'PENDING',
-        contexts: { nodes: [] },
+        contexts: {
+          nodes: [
+            {
+              __typename: 'CheckRun',
+              id: 'check1',
+              name: 'pending-check',
+              status: 'IN_PROGRESS',
+              conclusion: null,
+            },
+          ],
+        },
       };
 
       render(<CIStatusIcon statusCheckRollup={statusCheckRollup} />);
 
-      const icon = screen.getByTitle('No checks');
+      const icon = screen.getByTitle('1 pending');
       const svg = icon.querySelector('svg');
       expect(svg).toBeInTheDocument();
 
-      // スピナーのcircle要素を確認（PENDINGは実際にはスピナー）
-      const circle = svg?.querySelector('circle');
-      expect(circle).toBeInTheDocument();
+      // アニメーションクラスを確認（スピナー）
+      expect(svg).toHaveClass('animate-spin');
     });
   });
 
-  describe('ERROR状態', () => {
-    it('エラーアイコンと赤色のスタイルを表示する', () => {
+  describe('CANCELLEDの扱い', () => {
+    it('CheckRunのCANCELLEDは成功として扱われる', () => {
       const statusCheckRollup: StatusCheckRollup = {
-        state: 'ERROR',
-        contexts: { nodes: [] },
+        state: 'SUCCESS',
+        contexts: {
+          nodes: [
+            {
+              __typename: 'CheckRun',
+              id: 'check1',
+              name: 'cancelled-check',
+              status: 'COMPLETED',
+              conclusion: 'CANCELLED',
+            },
+            {
+              __typename: 'CheckRun',
+              id: 'check2',
+              name: 'success-check',
+              status: 'COMPLETED',
+              conclusion: 'SUCCESS',
+            },
+          ],
+        },
+      };
+
+      render(<CIStatusIcon statusCheckRollup={statusCheckRollup} />);
+
+      // CANCELLEDは除外されるので、1 passedになる
+      const icon = screen.getByTitle('1 passed');
+      expect(icon).toBeInTheDocument();
+      expect(icon).toHaveClass('text-green-600');
+    });
+
+    it('全てCANCELLEDの場合は"No checks"と表示される', () => {
+      const statusCheckRollup: StatusCheckRollup = {
+        state: 'SUCCESS',
+        contexts: {
+          nodes: [
+            {
+              __typename: 'CheckRun',
+              id: 'check1',
+              name: 'cancelled-check-1',
+              status: 'COMPLETED',
+              conclusion: 'CANCELLED',
+            },
+            {
+              __typename: 'CheckRun',
+              id: 'check2',
+              name: 'cancelled-check-2',
+              status: 'COMPLETED',
+              conclusion: 'CANCELLED',
+            },
+          ],
+        },
       };
 
       render(<CIStatusIcon statusCheckRollup={statusCheckRollup} />);
 
       const icon = screen.getByTitle('No checks');
       expect(icon).toBeInTheDocument();
-      expect(icon).toHaveClass('text-red-600');
-    });
-  });
-
-  describe('EXPECTED状態', () => {
-    it('待機中アイコンとグレーのスタイルを表示する', () => {
-      const statusCheckRollup: StatusCheckRollup = {
-        state: 'EXPECTED',
-        contexts: { nodes: [] },
-      };
-
-      render(<CIStatusIcon statusCheckRollup={statusCheckRollup} />);
-
-      const icon = screen.getByTitle('No checks');
-      expect(icon).toBeInTheDocument();
-      expect(icon).toHaveClass('text-gray-400');
+      expect(icon).toHaveClass('text-green-600');
     });
   });
 
   describe('null/undefined状態', () => {
-    it('statusCheckRollupがnullの場合は何も表示しない', () => {
+    it('statusCheckRollupがnullの場合はデフォルトで緑の成功アイコンを表示', () => {
       render(<CIStatusIcon statusCheckRollup={null} />);
 
-      // CIアイコンが表示されていないことを確認
-      expect(screen.queryByTitle('No checks')).not.toBeInTheDocument();
+      // デフォルトでは"No checks"として成功アイコンが表示される
+      const icon = screen.getByTitle('No checks');
+      expect(icon).toBeInTheDocument();
+      expect(icon).toHaveClass('text-green-600');
     });
 
-    it('statusCheckRollupがundefinedの場合は何も表示しない', () => {
+    it('statusCheckRollupがundefinedの場合はデフォルトで緑の成功アイコンを表示', () => {
       render(<CIStatusIcon statusCheckRollup={undefined} />);
 
-      // CIアイコンが表示されていないことを確認
-      expect(screen.queryByTitle('No checks')).not.toBeInTheDocument();
+      // デフォルトでは"No checks"として成功アイコンが表示される
+      const icon = screen.getByTitle('No checks');
+      expect(icon).toBeInTheDocument();
+      expect(icon).toHaveClass('text-green-600');
     });
   });
 
@@ -179,8 +245,6 @@ describe('CIStatusIcon', () => {
         { state: 'SUCCESS' as const, title: 'No checks' },
         { state: 'FAILURE' as const, title: 'No checks' },
         { state: 'PENDING' as const, title: 'No checks' },
-        { state: 'ERROR' as const, title: 'No checks' },
-        { state: 'EXPECTED' as const, title: 'No checks' },
       ];
 
       testCases.forEach(({ state, title }) => {

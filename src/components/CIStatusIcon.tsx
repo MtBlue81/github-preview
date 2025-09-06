@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { StatusCheckRollup, StatusCheckContext } from '../types/github';
 
 interface CIStatusIconProps {
@@ -5,12 +6,43 @@ interface CIStatusIconProps {
 }
 
 export function CIStatusIcon({ statusCheckRollup }: CIStatusIconProps) {
-  if (!statusCheckRollup) {
-    return null;
-  }
-
-  const { state, contexts } = statusCheckRollup;
-  const contextNodes = contexts?.nodes || [];
+  const { summary, state } = useMemo(() => {
+    const summary = statusCheckRollup?.contexts.nodes.reduce(
+      (acc, context: StatusCheckContext) => {
+        if (context.__typename === 'CheckRun') {
+          if (context.conclusion === 'SUCCESS') {
+            acc.success++;
+          } else if (
+            context.conclusion === 'FAILURE' ||
+            context.conclusion === 'TIMED_OUT'
+          ) {
+            acc.failed++;
+          } else if (
+            context.status === 'IN_PROGRESS' ||
+            context.status === 'QUEUED'
+          ) {
+            acc.pending++;
+          }
+        } else if (context.__typename === 'StatusContext') {
+          if (context.state === 'SUCCESS') {
+            acc.success++;
+          } else if (context.state === 'FAILURE' || context.state === 'ERROR') {
+            acc.failed++;
+          } else if (context.state === 'PENDING') {
+            acc.pending++;
+          }
+        }
+        return acc;
+      },
+      { success: 0, failed: 0, pending: 0 }
+    ) || { success: 0, failed: 0, pending: 0 };
+    const state = summary.failed
+      ? 'FAILURE'
+      : summary.pending
+        ? 'PENDING'
+        : 'SUCCESS';
+    return { summary, state };
+  }, [statusCheckRollup]);
 
   // ステータスに応じた色とアイコンを決定
   const getStatusColor = () => {
@@ -18,12 +50,9 @@ export function CIStatusIcon({ statusCheckRollup }: CIStatusIconProps) {
       case 'SUCCESS':
         return 'text-green-600';
       case 'FAILURE':
-      case 'ERROR':
         return 'text-red-600';
       case 'PENDING':
         return 'text-yellow-600';
-      case 'EXPECTED':
-        return 'text-gray-400';
       default:
         return 'text-gray-500';
     }
@@ -42,7 +71,6 @@ export function CIStatusIcon({ statusCheckRollup }: CIStatusIconProps) {
           </svg>
         );
       case 'FAILURE':
-      case 'ERROR':
         return (
           <svg className='w-5 h-5' fill='currentColor' viewBox='0 0 20 20'>
             <path
@@ -85,37 +113,6 @@ export function CIStatusIcon({ statusCheckRollup }: CIStatusIconProps) {
 
   // ツールチップ用のサマリーを生成
   const getTooltipContent = () => {
-    const summary = contextNodes.reduce(
-      (acc, context: StatusCheckContext) => {
-        if (context.__typename === 'CheckRun') {
-          if (context.conclusion === 'SUCCESS') {
-            acc.success++;
-          } else if (
-            context.conclusion === 'FAILURE' ||
-            context.conclusion === 'CANCELLED' ||
-            context.conclusion === 'TIMED_OUT'
-          ) {
-            acc.failed++;
-          } else if (
-            context.status === 'IN_PROGRESS' ||
-            context.status === 'QUEUED'
-          ) {
-            acc.pending++;
-          }
-        } else if (context.__typename === 'StatusContext') {
-          if (context.state === 'SUCCESS') {
-            acc.success++;
-          } else if (context.state === 'FAILURE' || context.state === 'ERROR') {
-            acc.failed++;
-          } else if (context.state === 'PENDING') {
-            acc.pending++;
-          }
-        }
-        return acc;
-      },
-      { success: 0, failed: 0, pending: 0 }
-    );
-
     const parts = [];
     if (summary.success > 0) parts.push(`${summary.success} passed`);
     if (summary.failed > 0) parts.push(`${summary.failed} failed`);
