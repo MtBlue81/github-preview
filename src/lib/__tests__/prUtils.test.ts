@@ -61,9 +61,18 @@ describe('deduplicatePullRequests', () => {
       expect(result.length).toBe(1);
       expect(result[0].id).toBe('PR_1');
       expect(result[0].categories.length).toBe(3);
-      expect(result[0].categories).toContainEqual({ title: 'メンション', icon: '💬' });
-      expect(result[0].categories).toContainEqual({ title: 'アサイン', icon: '📌' });
-      expect(result[0].categories).toContainEqual({ title: '作成', icon: '✏️' });
+      expect(result[0].categories).toContainEqual({
+        title: 'メンション',
+        icon: '💬',
+      });
+      expect(result[0].categories).toContainEqual({
+        title: 'アサイン',
+        icon: '📌',
+      });
+      expect(result[0].categories).toContainEqual({
+        title: '作成',
+        icon: '✏️',
+      });
     });
 
     it('異なるPRは別々に保持される', () => {
@@ -83,7 +92,7 @@ describe('deduplicatePullRequests', () => {
       );
 
       expect(result.length).toBe(3);
-      
+
       const resultPR1 = result.find(pr => pr.id === 'PR_1');
       expect(resultPR1?.categories.length).toBe(1);
       expect(resultPR1?.categories[0].title).toBe('メンション');
@@ -99,45 +108,39 @@ describe('deduplicatePullRequests', () => {
 
   describe('フィルタリング機能', () => {
     it('無視リストのPRは除外される', () => {
-      const pr1 = createMockPR({ 
+      const pr1 = createMockPR({
         id: 'PR_1',
         repository: { name: 'repo1', owner: { login: 'org1' } },
-        number: 1
+        number: 1,
       });
-      const pr2 = createMockPR({ 
+      const pr2 = createMockPR({
         id: 'PR_2',
         repository: { name: 'repo2', owner: { login: 'org2' } },
-        number: 2
+        number: 2,
       });
 
-      const categories = [
-        { title: 'メンション', icon: '💬', prs: [pr1, pr2] },
-      ];
+      const categories = [{ title: 'メンション', icon: '💬', prs: [pr1, pr2] }];
 
       const isIgnored = (prKey: string) => prKey === 'org1:repo1:1';
 
-      const result = deduplicatePullRequests(
-        categories,
-        isIgnored,
-        new Set()
-      );
+      const result = deduplicatePullRequests(categories, isIgnored, new Set());
 
       expect(result.length).toBe(1);
       expect(result[0].id).toBe('PR_2');
     });
 
     it('除外ラベルを持つPRは除外される', () => {
-      const pr1 = createMockPR({ 
+      const pr1 = createMockPR({
         id: 'PR_1',
-        labels: { nodes: [{ name: 'bug', color: 'ff0000' }] }
+        labels: { nodes: [{ name: 'bug', color: 'ff0000' }] },
       });
-      const pr2 = createMockPR({ 
+      const pr2 = createMockPR({
         id: 'PR_2',
-        labels: { nodes: [{ name: 'feature', color: '00ff00' }] }
+        labels: { nodes: [{ name: 'feature', color: '00ff00' }] },
       });
-      const pr3 = createMockPR({ 
+      const pr3 = createMockPR({
         id: 'PR_3',
-        labels: { nodes: [] }
+        labels: { nodes: [] },
       });
 
       const categories = [
@@ -159,19 +162,17 @@ describe('deduplicatePullRequests', () => {
     });
 
     it('複数の除外ラベルを持つPRも除外される', () => {
-      const pr1 = createMockPR({ 
+      const pr1 = createMockPR({
         id: 'PR_1',
-        labels: { 
+        labels: {
           nodes: [
             { name: 'bug', color: 'ff0000' },
-            { name: 'documentation', color: '0000ff' }
-          ] 
-        }
+            { name: 'documentation', color: '0000ff' },
+          ],
+        },
       });
 
-      const categories = [
-        { title: 'メンション', icon: '💬', prs: [pr1] },
-      ];
+      const categories = [{ title: 'メンション', icon: '💬', prs: [pr1] }];
 
       const excludedLabels = new Set(['documentation']);
 
@@ -185,18 +186,18 @@ describe('deduplicatePullRequests', () => {
     });
 
     it('無視リストと除外ラベルの両方が適用される', () => {
-      const pr1 = createMockPR({ 
+      const pr1 = createMockPR({
         id: 'PR_1',
         repository: { name: 'repo1', owner: { login: 'org1' } },
-        number: 1
+        number: 1,
       });
-      const pr2 = createMockPR({ 
+      const pr2 = createMockPR({
         id: 'PR_2',
-        labels: { nodes: [{ name: 'bug', color: 'ff0000' }] }
+        labels: { nodes: [{ name: 'bug', color: 'ff0000' }] },
       });
-      const pr3 = createMockPR({ 
+      const pr3 = createMockPR({
         id: 'PR_3',
-        labels: { nodes: [] }
+        labels: { nodes: [] },
       });
 
       const categories = [
@@ -219,17 +220,17 @@ describe('deduplicatePullRequests', () => {
 
   describe('ソート機能', () => {
     it('PRは更新日時の新しい順にソートされる', () => {
-      const pr1 = createMockPR({ 
+      const pr1 = createMockPR({
         id: 'PR_1',
-        updatedAt: '2024-01-01T00:00:00Z'
+        updatedAt: '2024-01-01T00:00:00Z',
       });
-      const pr2 = createMockPR({ 
+      const pr2 = createMockPR({
         id: 'PR_2',
-        updatedAt: '2024-01-03T00:00:00Z'
+        updatedAt: '2024-01-03T00:00:00Z',
       });
-      const pr3 = createMockPR({ 
+      const pr3 = createMockPR({
         id: 'PR_3',
-        updatedAt: '2024-01-02T00:00:00Z'
+        updatedAt: '2024-01-02T00:00:00Z',
       });
 
       const categories = [
@@ -253,9 +254,7 @@ describe('deduplicatePullRequests', () => {
       const pr1 = createMockPR({ id: 'PR_1', updatedAt: sameTime });
       const pr2 = createMockPR({ id: 'PR_2', updatedAt: sameTime });
 
-      const categories = [
-        { title: 'メンション', icon: '💬', prs: [pr1, pr2] },
-      ];
+      const categories = [{ title: 'メンション', icon: '💬', prs: [pr1, pr2] }];
 
       const result = deduplicatePullRequests(
         categories,
@@ -271,11 +270,7 @@ describe('deduplicatePullRequests', () => {
 
   describe('エッジケース', () => {
     it('空のカテゴリ配列を処理できる', () => {
-      const result = deduplicatePullRequests(
-        [],
-        () => false,
-        new Set()
-      );
+      const result = deduplicatePullRequests([], () => false, new Set());
 
       expect(result).toEqual([]);
     });
@@ -299,17 +294,11 @@ describe('deduplicatePullRequests', () => {
       const pr1 = createMockPR({ id: 'PR_1' });
       const pr2 = createMockPR({ id: 'PR_2' });
 
-      const categories = [
-        { title: 'メンション', icon: '💬', prs: [pr1, pr2] },
-      ];
+      const categories = [{ title: 'メンション', icon: '💬', prs: [pr1, pr2] }];
 
       const isIgnored = () => true; // すべて無視
 
-      const result = deduplicatePullRequests(
-        categories,
-        isIgnored,
-        new Set()
-      );
+      const result = deduplicatePullRequests(categories, isIgnored, new Set());
 
       expect(result).toEqual([]);
     });
@@ -328,23 +317,23 @@ describe('deduplicatePullRequests', () => {
       );
 
       expect(result.length).toBe(1);
-      expect(result[0].categories).toContainEqual({ 
-        title: '特殊カテゴリ🎉', 
-        icon: '🚀' 
+      expect(result[0].categories).toContainEqual({
+        title: '特殊カテゴリ🎉',
+        icon: '🚀',
       });
-      expect(result[0].categories).toContainEqual({ 
-        title: '長いカテゴリ名テスト', 
-        icon: '📚' 
+      expect(result[0].categories).toContainEqual({
+        title: '長いカテゴリ名テスト',
+        icon: '📚',
       });
     });
   });
 
   describe('パフォーマンステスト', () => {
     it('大量のPRを効率的に処理できる', () => {
-      const prs = Array.from({ length: 100 }, (_, i) => 
-        createMockPR({ 
+      const prs = Array.from({ length: 100 }, (_, i) =>
+        createMockPR({
           id: `PR_${i}`,
-          updatedAt: new Date(Date.now() - i * 1000).toISOString()
+          updatedAt: new Date(Date.now() - i * 1000).toISOString(),
         })
       );
 
@@ -361,11 +350,11 @@ describe('deduplicatePullRequests', () => {
       );
 
       expect(result.length).toBe(100);
-      
+
       // 重複したPRがカテゴリを複数持つことを確認
       const pr25 = result.find(pr => pr.id === 'PR_25');
       expect(pr25?.categories.length).toBe(2); // メンションとアサイン
-      
+
       const pr50 = result.find(pr => pr.id === 'PR_50');
       expect(pr50?.categories.length).toBe(2); // アサインと作成
     });
@@ -392,7 +381,9 @@ describe('buildGitHubSearchQuery', () => {
 
   it('review-requested検索クエリを正しく生成する', () => {
     const query = buildGitHubSearchQuery(username, 'review-requested');
-    expect(query).toBe('is:pr is:open review-requested:testuser sort:updated-desc');
+    expect(query).toBe(
+      'is:pr is:open review-requested:testuser sort:updated-desc'
+    );
   });
 
   it('reviewed-by検索クエリを正しく生成する', () => {

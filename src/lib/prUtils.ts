@@ -29,7 +29,7 @@ export function deduplicatePullRequests(
   categories.forEach(category => {
     category.prs.forEach((pr: PullRequest) => {
       const prKey = `${pr.repository.owner.login}:${pr.repository.name}:${pr.number}`;
-      
+
       // 無視リストチェック
       if (isIgnored(prKey)) return;
 
@@ -58,8 +58,7 @@ export function deduplicatePullRequests(
 
   // 更新日時でソート（新しい順）
   return Array.from(prMap.values()).sort(
-    (a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 }
 
@@ -68,11 +67,17 @@ export function deduplicatePullRequests(
  */
 export function buildGitHubSearchQuery(
   username: string,
-  type: 'author' | 'assignee' | 'mentions' | 'review-requested' | 'reviewed-by' | 'commenter'
+  type:
+    | 'author'
+    | 'assignee'
+    | 'mentions'
+    | 'review-requested'
+    | 'reviewed-by'
+    | 'commenter'
 ): string {
   const baseQuery = 'is:pr is:open';
   const sortQuery = 'sort:updated-desc';
-  
+
   switch (type) {
     case 'author':
       return `${baseQuery} author:${username} ${sortQuery}`;

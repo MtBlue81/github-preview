@@ -39,9 +39,7 @@ export function FilterSettingsModal({
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
       <div className='bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col'>
         <div className='p-6 border-b'>
-          <h2 className='text-xl font-bold text-gray-900'>
-            フィルタ設定
-          </h2>
+          <h2 className='text-xl font-bold text-gray-900'>フィルタ設定</h2>
           <p className='mt-1 text-sm text-gray-600'>
             除外したいラベルを選択してください
           </p>
@@ -124,7 +122,9 @@ export function FilterSettingsModal({
                       />
                       <span
                         className={`text-sm ${
-                          isExcluded ? 'text-gray-500 line-through' : 'text-gray-900'
+                          isExcluded
+                            ? 'text-gray-500 line-through'
+                            : 'text-gray-900'
                         }`}
                       >
                         {label}

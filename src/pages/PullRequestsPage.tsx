@@ -14,8 +14,11 @@ import { FilterSettingsModal } from '../components/FilterSettingsModal';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Link } from 'react-router-dom';
-import { deduplicatePullRequests, buildGitHubSearchQuery, PRWithCategories } from '../lib/prUtils';
-
+import {
+  deduplicatePullRequests,
+  buildGitHubSearchQuery,
+  PRWithCategories,
+} from '../lib/prUtils';
 
 export function PullRequestsPage() {
   const { user } = useAuthStore();
@@ -35,7 +38,10 @@ export function PullRequestsPage() {
       authorQuery: buildGitHubSearchQuery(username, 'author'),
       assigneeQuery: buildGitHubSearchQuery(username, 'assignee'),
       mentionsQuery: buildGitHubSearchQuery(username, 'mentions'),
-      reviewRequestedQuery: buildGitHubSearchQuery(username, 'review-requested'),
+      reviewRequestedQuery: buildGitHubSearchQuery(
+        username,
+        'review-requested'
+      ),
       reviewedQuery: buildGitHubSearchQuery(username, 'reviewed-by'),
       commentedQuery: buildGitHubSearchQuery(username, 'commenter'),
     },

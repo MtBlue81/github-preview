@@ -142,7 +142,7 @@ npm run tauri build
 - [ ] 詳細表示の別windowリファクタリング (最前面などが不要、できるだけシンプルに)
 - [ ] コメント・レビュー投稿機能
 - [ ] ファイル差分の詳細表示
-- [ ] テスト環境の構築（Vitest + React Testing Library）
+- ✅ テスト環境の構築（Vitest + React Testing Library）
 
 ## Tauri WebView実装の詳細
 
@@ -229,6 +229,64 @@ PR詳細画面にGitHubの完全なWebインターフェースを統合するた
 - **ウィンドウ管理**: ユーザーがWebViewウィンドウを閉じる可能性
 - **X-Frame-Options**: Webプラットフォームの根本的制限
 
+## テスト環境
+
+### テストフレームワーク
+
+- **Vitest**: 高速なテスト実行とHot Reloadに対応
+- **React Testing Library**: UIコンポーネントのテスト
+- **Happy DOM**: 軽量なDOM環境
+- **Tauri APIモック**: Tauriコマンドのモック機能
+
+### カバレッジ測定
+
+```bash
+# テスト実行
+npm test
+
+# カバレッジ付きテスト実行  
+npm run test:coverage
+
+# カバレッジレポート確認
+# coverage/index.html をブラウザで開く
+```
+
+### テスト対象
+
+- **ビジネスロジック**: PR重複除外、GraphQLクエリ生成（98%カバレッジ）
+- **ストア**: 認証、無視リスト、既読状態管理
+- **UIコンポーネント**: レイアウト、アイコン表示
+- **統合テスト**: ページレンダリング、データフロー
+
+### 実装済みテスト
+
+- ✅ **prUtils.test.ts**: PR統合ロジック・検索クエリ生成（22テスト）
+- ✅ **authStore.test.ts**: 認証状態とlocalStorage連携（10テスト）
+- ✅ **ignoreStore.test.ts**: PR無視機能（18テスト）
+- ✅ **readStatusStore.test.ts**: 既読管理機能（16テスト）
+- ✅ **CIStatusIcon.test.ts**: CI状態アイコン表示（16テスト）
+- ✅ **Layout.test.ts**: ヘッダー・ナビゲーション（20テスト）
+- ✅ **PullRequestsPage.test.ts**: メインページの統合テスト（7テスト）
+
+### テストコマンド
+
+```bash
+# 全テスト実行
+npm test
+
+# 特定ファイルのテスト
+npm test -- src/lib/__tests__/prUtils.test.ts
+
+# ウォッチモード
+npm run test:watch
+
+# UIモード
+npm run test:ui
+
+# カバレッジ測定
+npm run test:coverage
+```
+
 ## 開発メモ
 
 - バージョン固定でレンジ指定を回避済み
@@ -236,3 +294,4 @@ PR詳細画面にGitHubの完全なWebインターフェースを統合するた
 - Tauri設定でmacOS固有の最適化実装済み
 - 透明タイトルバーでネイティブな外観
 - WebView実装でGitHubのフル機能を統合
+- テスト環境でビジネスロジックの品質保証完了
