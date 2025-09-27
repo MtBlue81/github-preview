@@ -9,6 +9,7 @@ import { LoginPage } from './pages/LoginPage';
 import { PullRequestsPage } from './pages/PullRequestsPage';
 import { IgnoredPRsPage } from './pages/IgnoredPRsPage';
 import { RootLayout } from './components/RootLayout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { githubClient } from './lib/github';
 import { useAuthStore } from './stores/authStore';
 
@@ -46,9 +47,11 @@ const router = createBrowserRouter([
 
 function App() {
   return (
-    <ApolloProvider client={githubClient}>
-      <RouterProvider router={router} />
-    </ApolloProvider>
+    <ErrorBoundary>
+      <ApolloProvider client={githubClient}>
+        <RouterProvider router={router} />
+      </ApolloProvider>
+    </ErrorBoundary>
   );
 }
 
