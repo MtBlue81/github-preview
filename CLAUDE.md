@@ -85,6 +85,20 @@ npm run tauri build
 - **Node.js**: 18以上
 - **macOS**: 10.15以上（ビルド対象）
 
+### ビルド設定
+
+#### Tauri Features（Cargo.toml）
+- `macos-private-api`: macOS固有のプライベートAPI使用（透明タイトルバー等）
+- `devtools`: 本番ビルドでもDevTools使用可能（右クリック→Inspect Element または Cmd+Option+I）
+
+#### Tauri Plugins
+- `tauri-plugin-opener`: 外部ブラウザでURLを開く
+- `tauri-plugin-notification`: システム通知
+
+#### Rust依存関係
+- `reqwest`: GitHub API通信（カスタムコマンド経由）
+- `tokio`: 非同期ランタイム
+
 ## 使用方法
 
 1. [GitHub Settings](https://github.com/settings/tokens/new?scopes=repo,read:user) でPersonal Access Tokenを作成
@@ -94,6 +108,22 @@ npm run tauri build
 5. API Rate Limit状況をヘッダーで確認可能
 
 ## アーキテクチャ
+
+### API通信
+
+#### カスタムRustコマンド（CORS回避）
+- **実装**: `graphql_request` カスタムコマンドでRust側（reqwest）からGitHub APIを呼び出し
+- **理由**: WebViewからの直接fetchはCORS制限を受け、特に504エラー時にCORSヘッダーが欠落してエラー内容が取得できない問題があった
+- **User-Agent**: `GitHub-PR-Preview/0.1.0`（GitHub API必須ヘッダー）
+
+#### タイムアウト・リトライ
+- **タイムアウト**: 30秒（Rust側で設定）
+- **自動リトライ**: Apollo Client の RetryLink でネットワークエラー時に最大3回リトライ（1〜5秒間隔、ジッター付き）
+- **エラーハンドリング**: Apollo Client の `onError` リンクでGraphQL/ネットワークエラーを詳細ログ出力
+
+#### 実装ファイル
+- `src-tauri/src/lib.rs`: `graphql_request` カスタムコマンド（reqwest使用）
+- `src/lib/github.ts`: Apollo Client設定、Tauri invoke呼び出し、エラー/リトライリンク
 
 ### GraphQL API統合
 
@@ -297,3 +327,5 @@ npm run test:coverage
 - 透明タイトルバーでネイティブな外観
 - WebView実装でGitHubのフル機能を統合
 - テスト環境でビジネスロジックの品質保証完了
+- API通信はRustカスタムコマンド（reqwest）経由（CORS問題を回避）
+- 本番ビルドでもDevTools有効（デバッグ用）

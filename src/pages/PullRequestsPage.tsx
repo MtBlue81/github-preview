@@ -46,6 +46,8 @@ export function PullRequestsPage() {
       commentedQuery: buildGitHubSearchQuery(username, 'commenter'),
     },
     pollInterval: 60000,
+    fetchPolicy: 'cache-and-network',
+    notifyOnNetworkStatusChange: true,
   });
 
   const loading = allPullRequestsQuery.loading;
@@ -53,11 +55,25 @@ export function PullRequestsPage() {
   const refetch = allPullRequestsQuery.refetch;
 
   const handleRefresh = async () => {
-    await refetch();
+    console.log('[Refresh] handleRefresh called');
+    const result = await refetch();
+    console.log('[Refresh] refetch completed:', {
+      hasData: !!result.data,
+      networkStatus: result.networkStatus,
+      authoredCount: result.data?.authored?.nodes?.length,
+    });
   };
 
   // PRとカテゴリ情報を統合した配列を作成
   const allPRsWithCategories = useMemo(() => {
+    console.log('[Refresh] useMemo recalculating allPRsWithCategories:', {
+      authoredCount: allPullRequestsQuery.data?.authored?.nodes?.length,
+      assignedCount: allPullRequestsQuery.data?.assigned?.nodes?.length,
+      mentionedCount: allPullRequestsQuery.data?.mentioned?.nodes?.length,
+      reviewRequestedCount: allPullRequestsQuery.data?.reviewRequested?.nodes?.length,
+      reviewedCount: allPullRequestsQuery.data?.reviewed?.nodes?.length,
+      commentedCount: allPullRequestsQuery.data?.commented?.nodes?.length,
+    });
     // 各カテゴリのPRを処理
     const categories = [
       {
@@ -142,6 +158,16 @@ export function PullRequestsPage() {
     allPullRequestsQuery.data?.reviewed?.nodes,
     allPullRequestsQuery.data?.commented?.nodes,
   ]);
+
+  // data変更検知用useEffect（デバッグ用）
+  useEffect(() => {
+    console.log('[Refresh] allPullRequestsQuery state changed:', {
+      timestamp: new Date().toISOString(),
+      hasData: !!allPullRequestsQuery.data,
+      loading: allPullRequestsQuery.loading,
+      networkStatus: allPullRequestsQuery.networkStatus,
+    });
+  }, [allPullRequestsQuery.data, allPullRequestsQuery.loading, allPullRequestsQuery.networkStatus]);
 
   // 以前のPRリストを保持
   const previousPRsRef = useRef<PullRequest[]>([]);
