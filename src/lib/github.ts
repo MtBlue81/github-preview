@@ -79,8 +79,7 @@ const errorLink = onError(
 
         // GitHub APIの一時的なエラーの場合はリトライ
         if (isRetryableGraphQLError(err.message)) {
-          const retryCount =
-            (operation.getContext().retryCount as number) || 0;
+          const retryCount = (operation.getContext().retryCount as number) || 0;
           if (retryCount < 3) {
             console.log(
               `[GraphQL retry]: Retrying operation ${operation.operationName} (attempt ${retryCount + 1}/3)`
@@ -140,7 +139,9 @@ const retryLink = new RetryLink({
       if (!error) return false;
       const shouldRetry = isRetryableNetworkError(error);
       if (shouldRetry) {
-        console.log(`[Network retry]: Will retry due to: ${error.message?.substring(0, 100)}`);
+        console.log(
+          `[Network retry]: Will retry due to: ${error.message?.substring(0, 100)}`
+        );
       }
       return shouldRetry;
     },
