@@ -126,8 +126,10 @@ export interface RateLimit {
   resetAt: string;
 }
 
-export interface PullRequestDetail
-  extends Omit<PullRequest, 'comments' | 'reviews'> {
+export interface PullRequestDetail extends Omit<
+  PullRequest,
+  'comments' | 'reviews'
+> {
   body: string;
   bodyHTML: string;
   mergeable: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN';
