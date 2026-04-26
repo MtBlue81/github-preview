@@ -1,0 +1,55 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>MtBlue81/renovate-config"],
+  "packageRules": [
+    {
+      "description": "Tauri JS パッケージ (@tauri-apps/*) をまとめて更新",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["/^@tauri-apps//"],
+      "groupName": "tauri-apps (npm)"
+    },
+    {
+      "description": "Tauri Rust クレート (tauri / tauri-build / tauri-plugin-*) をまとめて更新",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["tauri", "tauri-build", "/^tauri-plugin-/"],
+      "groupName": "tauri (cargo)"
+    },
+    {
+      "description": "testing-library / vitest / happy-dom をまとめて更新",
+      "matchPackageNames": [
+        "/^@testing-library//",
+        "/^@vitest//",
+        "vitest",
+        "happy-dom"
+      ],
+      "groupName": "testing"
+    },
+    {
+      "description": "ESLint / Prettier 系をまとめて更新",
+      "matchPackageNames": [
+        "eslint",
+        "/^eslint-/",
+        "/^@typescript-eslint//",
+        "typescript-eslint",
+        "prettier"
+      ],
+      "groupName": "linters"
+    },
+    {
+      "description": "Apollo / GraphQL 系をまとめて更新",
+      "matchPackageNames": ["@apollo/client", "graphql"],
+      "groupName": "apollo-graphql"
+    },
+    {
+      "description": "React 関連をまとめて更新",
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "react-router-dom",
+        "@types/react",
+        "@types/react-dom"
+      ],
+      "groupName": "react"
+    }
+  ]
+}
