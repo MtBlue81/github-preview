@@ -70,7 +70,8 @@ export function PullRequestsPage() {
       authoredCount: allPullRequestsQuery.data?.authored?.nodes?.length,
       assignedCount: allPullRequestsQuery.data?.assigned?.nodes?.length,
       mentionedCount: allPullRequestsQuery.data?.mentioned?.nodes?.length,
-      reviewRequestedCount: allPullRequestsQuery.data?.reviewRequested?.nodes?.length,
+      reviewRequestedCount:
+        allPullRequestsQuery.data?.reviewRequested?.nodes?.length,
       reviewedCount: allPullRequestsQuery.data?.reviewed?.nodes?.length,
       commentedCount: allPullRequestsQuery.data?.commented?.nodes?.length,
     });
@@ -167,7 +168,11 @@ export function PullRequestsPage() {
       loading: allPullRequestsQuery.loading,
       networkStatus: allPullRequestsQuery.networkStatus,
     });
-  }, [allPullRequestsQuery.data, allPullRequestsQuery.loading, allPullRequestsQuery.networkStatus]);
+  }, [
+    allPullRequestsQuery.data,
+    allPullRequestsQuery.loading,
+    allPullRequestsQuery.networkStatus,
+  ]);
 
   // 以前のPRリストを保持
   const previousPRsRef = useRef<PullRequest[]>([]);

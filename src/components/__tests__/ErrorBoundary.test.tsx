@@ -50,9 +50,9 @@ describe('ErrorBoundary', () => {
     Object.defineProperty(window, 'location', {
       value: {
         reload: reloadSpy,
-        href: 'http://localhost:3000'
+        href: 'http://localhost:3000',
       },
-      writable: true
+      writable: true,
     });
 
     render(
@@ -113,7 +113,9 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
 
-    const stackSummary = screen.getByText('詳細エラースタック (クリックして展開)');
+    const stackSummary = screen.getByText(
+      '詳細エラースタック (クリックして展開)'
+    );
     expect(stackSummary).toBeInTheDocument();
   });
 
