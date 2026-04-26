@@ -2,18 +2,45 @@ import '@testing-library/jest-dom';
 import { beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { mockIPC, mockWindows, clearMocks } from '@tauri-apps/api/mocks';
 
+// 一部の happy-dom + vitest 組み合わせでは globalThis.localStorage が
+// 空オブジェクトのまま提供されるケースがあるため、最低限の Web Storage API を polyfill する。
+// zustand の persist middleware はモジュール初期化時に localStorage 参照を取り込むため、
+// beforeAll より前 (setup.ts のトップレベル) で実行する必要がある。
+(function ensureLocalStorage() {
+  if (typeof (globalThis as any).localStorage?.setItem === 'function') return;
+  const storage = new Map<string, string>();
+  const polyfill = {
+    getItem: (k: string) => (storage.has(k) ? storage.get(k)! : null),
+    setItem: (k: string, v: string) => {
+      storage.set(k, String(v));
+    },
+    removeItem: (k: string) => {
+      storage.delete(k);
+    },
+    clear: () => {
+      storage.clear();
+    },
+    key: (i: number) => Array.from(storage.keys())[i] ?? null,
+    get length() {
+      return storage.size;
+    },
+  };
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    writable: true,
+    value: polyfill,
+  });
+})();
+
 // テスト開始前にTauri環境をモック
 beforeAll(() => {
-  // window.__TAURI_INTERNALS__を設定
-  (globalThis as any).window = {
-    ...(globalThis.window || {}),
-    __TAURI_INTERNALS__: {
-      metadata: {
-        currentWindow: { label: 'main' },
-        currentWebview: { label: 'main' },
-      },
-      invoke: vi.fn().mockResolvedValue({}),
+  // window.__TAURI_INTERNALS__ を追加 (既存の window getter 群は壊さない)
+  (globalThis as any).window.__TAURI_INTERNALS__ = {
+    metadata: {
+      currentWindow: { label: 'main' },
+      currentWebview: { label: 'main' },
     },
+    invoke: vi.fn().mockResolvedValue({}),
   };
 
   // Tauri APIのモック設定
