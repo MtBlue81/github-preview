@@ -7,35 +7,25 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
 
 concurrency:
   group: release
   cancel-in-progress: false
 
 jobs:
-  detect:
-    name: Detect release branch
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.v.outputs.version }}
+  release:
+    name: Build and create draft release
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.head_ref, 'release/v')
+    runs-on: macos-14
+
     steps:
-      - name: Resolve head ref via API and extract version
+      - name: Extract version from head ref
         id: v
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          HEAD_REF=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq .head.ref)
-          case "$HEAD_REF" in
-            release/v*) ;;
-            *)
-              echo "Not a release branch ($HEAD_REF); skipping release."
-              exit 0
-              ;;
-          esac
           VERSION="${HEAD_REF#release/v}"
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid version extracted from branch: $VERSION" >&2
@@ -43,13 +33,6 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-  release:
-    name: Build and create draft release
-    needs: detect
-    if: needs.detect.outputs.version != ''
-    runs-on: macos-14
-
-    steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
@@ -76,8 +59,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v${{ needs.detect.outputs.version }}
-          releaseName: v${{ needs.detect.outputs.version }}
+          tagName: v${{ steps.v.outputs.version }}
+          releaseName: v${{ steps.v.outputs.version }}
           releaseDraft: true
           prerelease: false
           args: --target aarch64-apple-darwin
