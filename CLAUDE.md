@@ -59,20 +59,20 @@ Tauri + React + TypeScript + Tailwind CSSで構築されたMac用デスクトッ
 
 ```bash
 # 依存関係インストール
-npm install
+pnpm install
 
 # TypeScriptビルド
-npm run build
+pnpm build
 
 # 開発サーバー起動（要Rust）
-npm run tauri dev
+pnpm tauri dev
 ```
 
 ### Macアプリケーションビルド
 
 ```bash
 # プロダクションビルド（Macアプリ + DMGインストーラー生成）
-npm run tauri build
+pnpm tauri build
 
 # 生成されるファイル:
 # - src-tauri/target/release/bundle/macos/GitHub PR Preview.app
@@ -274,10 +274,10 @@ PR詳細画面にGitHubの完全なWebインターフェースを統合するた
 
 ```bash
 # テスト実行
-npm test
+pnpm test
 
 # カバレッジ付きテスト実行  
-npm run test:coverage
+pnpm test:coverage
 
 # カバレッジレポート確認
 # coverage/index.html をブラウザで開く
@@ -304,19 +304,19 @@ npm run test:coverage
 
 ```bash
 # 全テスト実行
-npm test
+pnpm test
 
 # 特定ファイルのテスト
-npm test -- src/lib/__tests__/prUtils.test.ts
+pnpm test src/lib/__tests__/prUtils.test.ts
 
 # ウォッチモード
-npm run test:watch
+pnpm test:watch
 
 # UIモード
-npm run test:ui
+pnpm test:ui
 
 # カバレッジ測定
-npm run test:coverage
+pnpm test:coverage
 ```
 
 ## 開発メモ

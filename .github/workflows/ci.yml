@@ -19,19 +19,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npx tsc --noEmit
-      - run: npm test
-      - run: npm run knip
-      - run: npm run build
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm test
+      - run: pnpm knip
+      - run: pnpm build
 
   cargo-check:
     name: Rust (cargo check)

@@ -3,8 +3,18 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "packageManager": "pnpm@10.33.2",
   "engines": {
-    "node": ">=24"
+    "node": ">=24",
+    "pnpm": ">=10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ],
+    "overrides": {
+      "semver": "^7.7.4"
+    }
   },
   "scripts": {
     "dev": "vite",
@@ -15,7 +25,7 @@
     "lint:fix": "eslint src/**/*.{ts,tsx} --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "format:lint": "npm run format && npm run lint:fix",
+    "format:lint": "pnpm format && pnpm lint:fix",
     "test": "vitest run",
     "test:all": "vitest run",
     "test:watch": "vitest",
