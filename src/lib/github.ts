@@ -49,7 +49,7 @@ const fetchWithTauri = async (
     });
   } catch (error) {
     console.error('[Tauri HTTP] Fetch error:', error);
-    throw new Error(String(error));
+    throw new Error(String(error), { cause: error });
   }
 };
 
