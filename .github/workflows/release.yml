@@ -18,7 +18,7 @@ jobs:
     if: >
       github.event.pull_request.merged == true &&
       startsWith(github.head_ref, 'release/v')
-    runs-on: macos-14
+    runs-on: macos-26
 
     steps:
       - name: Extract version from head ref
