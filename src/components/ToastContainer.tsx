@@ -22,7 +22,7 @@ export function ToastContainer() {
         >
           <div className='p-4'>
             <div className='flex items-start'>
-              <div className='flex-shrink-0'>
+              <div className='shrink-0'>
                 {toast.type === 'success' ? (
                   <svg
                     className='h-5 w-5 text-white'
@@ -66,9 +66,9 @@ export function ToastContainer() {
                   {toast.message}
                 </p>
               </div>
-              <div className='ml-4 flex-shrink-0 flex'>
+              <div className='ml-4 shrink-0 flex'>
                 <button
-                  className='inline-flex text-white hover:text-gray-200 focus:outline-none focus:text-gray-200'
+                  className='inline-flex text-white hover:text-gray-200 focus:outline-hidden focus:text-gray-200'
                   onClick={() => removeToast(toast.id)}
                 >
                   <span className='sr-only'>Close</span>

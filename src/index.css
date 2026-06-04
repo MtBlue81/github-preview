@@ -1,6 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* v4のPreflightはbuttonがcursor:defaultのため、v3までの挙動を維持する */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 /* Custom animations for WebView components */
 @keyframes fadeIn {

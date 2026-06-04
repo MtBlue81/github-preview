@@ -38,7 +38,7 @@ export function FilterSettingsModal({
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
       <div className='bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col'>
-        <div className='p-6 border-b'>
+        <div className='p-6 border-b border-gray-200'>
           <h2 className='text-xl font-bold text-gray-900'>フィルタ設定</h2>
           <p className='mt-1 text-sm text-gray-600'>
             除外したいラベルを選択してください
@@ -53,7 +53,7 @@ export function FilterSettingsModal({
               placeholder='ラベルを検索...'
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500'
             />
           </div>
 
@@ -137,10 +137,10 @@ export function FilterSettingsModal({
           </div>
         </div>
 
-        <div className='p-6 border-t flex justify-end gap-3'>
+        <div className='p-6 border-t border-gray-200 flex justify-end gap-3'>
           <button
             onClick={onClose}
-            className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500'
+            className='px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500'
           >
             閉じる
           </button>
