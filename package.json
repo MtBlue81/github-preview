@@ -43,7 +43,7 @@
     "graphql": "16.14.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "7.15.1",
+    "react-router-dom": "7.16.0",
     "rxjs": "7.8.2",
     "zustand": "5.0.13"
   },
