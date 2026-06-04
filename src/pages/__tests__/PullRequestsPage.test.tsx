@@ -38,9 +38,9 @@ const mockQuery = {
   refetch: vi.fn().mockResolvedValue({}),
 };
 
-vi.mock('@apollo/client', () => ({
+vi.mock('@apollo/client/react', async importOriginal => ({
+  ...(await importOriginal<typeof import('@apollo/client/react')>()),
   useQuery: vi.fn(() => mockQuery),
-  gql: vi.fn(),
 }));
 
 // Tauri APIをモック

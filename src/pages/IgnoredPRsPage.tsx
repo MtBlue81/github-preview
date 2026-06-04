@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { GET_PULL_REQUEST_DETAIL } from '../lib/queries';
 import { useIgnoreStore } from '../stores/ignoreStore';
 import { formatDistanceToNow } from 'date-fns';

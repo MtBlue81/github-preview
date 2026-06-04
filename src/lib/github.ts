@@ -5,7 +5,9 @@ import {
   ApolloLink,
   from,
   Observable,
+  CombinedGraphQLErrors,
 } from '@apollo/client';
+import { map } from 'rxjs';
 import { onError } from '@apollo/client/link/error';
 import { RetryLink } from '@apollo/client/link/retry';
 import { setContext } from '@apollo/client/link/context';
@@ -69,45 +71,40 @@ const isRetryableGraphQLError = (message: string): boolean => {
 };
 
 // エラーハンドリングリンク（リトライ機能付き）
-const errorLink = onError(
-  ({ graphQLErrors, networkError, operation, forward }) => {
-    if (graphQLErrors) {
-      for (const err of graphQLErrors) {
-        console.error(
-          `[GraphQL error]: Message: ${err.message}, Location: ${JSON.stringify(err.locations)}, Path: ${err.path}`
-        );
+const errorLink = onError(({ error, operation, forward }) => {
+  if (CombinedGraphQLErrors.is(error)) {
+    for (const err of error.errors) {
+      console.error(
+        `[GraphQL error]: Message: ${err.message}, Location: ${JSON.stringify(err.locations)}, Path: ${err.path}`
+      );
 
-        // GitHub APIの一時的なエラーの場合はリトライ
-        if (isRetryableGraphQLError(err.message)) {
-          const retryCount = (operation.getContext().retryCount as number) || 0;
-          if (retryCount < 3) {
-            console.log(
-              `[GraphQL retry]: Retrying operation ${operation.operationName} (attempt ${retryCount + 1}/3)`
-            );
-            operation.setContext({ retryCount: retryCount + 1 });
-            // 1-3秒のランダム遅延後にリトライ
-            return new Observable(observer => {
-              const delay = 1000 + Math.random() * 2000;
-              setTimeout(() => {
-                forward(operation).subscribe(observer);
-              }, delay);
-            });
-          }
+      // GitHub APIの一時的なエラーの場合はリトライ
+      if (isRetryableGraphQLError(err.message)) {
+        const retryCount = (operation.getContext().retryCount as number) || 0;
+        if (retryCount < 3) {
+          console.log(
+            `[GraphQL retry]: Retrying operation ${operation.operationName} (attempt ${retryCount + 1}/3)`
+          );
+          operation.setContext({ retryCount: retryCount + 1 });
+          // 1-3秒のランダム遅延後にリトライ
+          return new Observable(observer => {
+            const delay = 1000 + Math.random() * 2000;
+            setTimeout(() => {
+              forward(operation).subscribe(observer);
+            }, delay);
+          });
         }
       }
     }
-    if (networkError) {
-      if (networkError.name === 'AbortError') {
-        console.error(
-          `[Network error]: Request timeout for operation ${operation.operationName}`
-        );
-      } else {
-        console.error(`[Network error]: ${networkError.message}`);
-      }
-    }
-    return;
+  } else if (error.name === 'AbortError') {
+    console.error(
+      `[Network error]: Request timeout for operation ${operation.operationName}`
+    );
+  } else {
+    console.error(`[Network error]: ${error.message}`);
   }
-);
+  return;
+});
 
 // リトライ可能なネットワークエラーかどうかを判定
 const isRetryableNetworkError = (error: Error): boolean => {
@@ -166,10 +163,12 @@ const loggingLink = new ApolloLink((operation, forward) => {
     headers: operation.getContext().headers,
   });
 
-  return forward(operation).map(response => {
-    console.log('GraphQL Response:', response);
-    return response;
-  });
+  return forward(operation).pipe(
+    map(response => {
+      console.log('GraphQL Response:', response);
+      return response;
+    })
+  );
 });
 
 export const githubClient = new ApolloClient({

@@ -25,7 +25,7 @@ export function LoginPage() {
         fetchPolicy: 'network-only',
       });
 
-      if (data.viewer) {
+      if (data?.viewer) {
         saveToken(token);
         setUser(data.viewer);
         navigate('/');

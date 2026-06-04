@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { GET_ALL_PULL_REQUESTS } from '../lib/queries';
 import { PullRequest } from '../types/github';
 import { useAuthStore } from '../stores/authStore';
@@ -59,10 +59,14 @@ export function PullRequestsPage() {
     const result = await refetch();
     console.log('[Refresh] refetch completed:', {
       hasData: !!result.data,
-      networkStatus: result.networkStatus,
       authoredCount: result.data?.authored?.nodes?.length,
     });
   };
+
+  // search結果のnodesからnullを除外してPullRequest[]に絞り込む
+  const nonNullPRs = (
+    nodes: Array<PullRequest | null> | null | undefined
+  ): PullRequest[] => nodes?.filter((pr): pr is PullRequest => !!pr) ?? [];
 
   // PRとカテゴリ情報を統合した配列を作成
   const allPRsWithCategories = useMemo(() => {
@@ -80,34 +84,32 @@ export function PullRequestsPage() {
       {
         title: 'メンション',
         icon: '💬',
-        prs: allPullRequestsQuery.data?.mentioned?.nodes?.filter(Boolean) || [],
+        prs: nonNullPRs(allPullRequestsQuery.data?.mentioned?.nodes),
       },
       {
         title: 'アサイン',
         icon: '📌',
-        prs: allPullRequestsQuery.data?.assigned?.nodes?.filter(Boolean) || [],
+        prs: nonNullPRs(allPullRequestsQuery.data?.assigned?.nodes),
       },
       {
         title: 'レビュー依頼',
         icon: '👀',
-        prs:
-          allPullRequestsQuery.data?.reviewRequested?.nodes?.filter(Boolean) ||
-          [],
+        prs: nonNullPRs(allPullRequestsQuery.data?.reviewRequested?.nodes),
       },
       {
         title: 'レビュー済み',
         icon: '💭',
-        prs: allPullRequestsQuery.data?.reviewed?.nodes?.filter(Boolean) || [],
+        prs: nonNullPRs(allPullRequestsQuery.data?.reviewed?.nodes),
       },
       {
         title: 'コメント済み',
         icon: '📝',
-        prs: allPullRequestsQuery.data?.commented?.nodes?.filter(Boolean) || [],
+        prs: nonNullPRs(allPullRequestsQuery.data?.commented?.nodes),
       },
       {
         title: '作成',
         icon: '✏️',
-        prs: allPullRequestsQuery.data?.authored?.nodes?.filter(Boolean) || [],
+        prs: nonNullPRs(allPullRequestsQuery.data?.authored?.nodes),
       },
     ];
 
@@ -542,7 +544,7 @@ export function PullRequestsPage() {
 
   return (
     <Layout
-      rateLimit={allPullRequestsQuery.data?.rateLimit}
+      rateLimit={allPullRequestsQuery.data?.rateLimit ?? undefined}
       loading={loading}
       onRefresh={handleRefresh}
       lastUpdated={lastUpdated}

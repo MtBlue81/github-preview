@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mockIPC, clearMocks } from '@tauri-apps/api/mocks';
-import { ApolloError } from '@apollo/client';
+import { CombinedGraphQLErrors } from '@apollo/client';
 import { githubClient, createAuthTestClient } from '../github';
 import { GET_VIEWER } from '../queries';
 import { useAuthStore } from '../../stores/authStore';
@@ -48,7 +48,7 @@ describe('github (Apollo Client + Tauri invoke 連携)', () => {
         fetchPolicy: 'no-cache',
       });
 
-      expect(result.data.viewer.login).toBe('testuser');
+      expect(result.data?.viewer.login).toBe('testuser');
       expect(calls).toHaveLength(1);
       expect(calls[0].url).toBe('https://api.github.com/graphql');
     });
@@ -86,7 +86,7 @@ describe('github (Apollo Client + Tauri invoke 連携)', () => {
   });
 
   describe('エラーハンドリング', () => {
-    it('GraphQL エラーレスポンスは ApolloError として伝播する', async () => {
+    it('GraphQL エラーレスポンスは CombinedGraphQLErrors として伝播する', async () => {
       mockIPC((cmd, _args) => {
         if (cmd === 'graphql_request') {
           return Promise.resolve(
@@ -109,7 +109,7 @@ describe('github (Apollo Client + Tauri invoke 連携)', () => {
           query: GET_VIEWER,
           fetchPolicy: 'no-cache',
         })
-      ).rejects.toBeInstanceOf(ApolloError);
+      ).rejects.toBeInstanceOf(CombinedGraphQLErrors);
     });
 
     it('invoke 失敗時はネットワークエラーとして伝播する', async () => {
