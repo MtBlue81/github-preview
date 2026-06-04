@@ -55,7 +55,7 @@ export function Layout({
 
   return (
     <div className='min-h-screen bg-gray-50'>
-      <nav className='bg-white shadow-sm'>
+      <nav className='bg-white shadow-xs'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
           <div className='flex justify-end h-16'>
             <div className='flex items-center'>
@@ -111,7 +111,7 @@ export function Layout({
                         <button
                           onClick={handleRefresh}
                           disabled={isRefreshing || loading}
-                          className='inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed'
+                          className='inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed'
                           title='最新データを取得'
                         >
                           <svg
@@ -134,7 +134,7 @@ export function Layout({
                       {onFilterClick && (
                         <button
                           onClick={onFilterClick}
-                          className='inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                          className='inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                           title='フィルタ設定'
                         >
                           <svg

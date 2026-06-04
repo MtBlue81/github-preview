@@ -174,7 +174,7 @@ export function IgnoredPRsPage() {
         </div>
 
         {ignoredPRs.length === 0 ? (
-          <div className='bg-white shadow-sm rounded-lg p-8 text-center'>
+          <div className='bg-white shadow-xs rounded-lg p-8 text-center'>
             <div className='text-gray-500'>
               <svg
                 className='mx-auto h-12 w-12 text-gray-400 mb-4'
@@ -196,7 +196,7 @@ export function IgnoredPRsPage() {
             </div>
           </div>
         ) : (
-          <div className='bg-white shadow-sm rounded-lg overflow-hidden'>
+          <div className='bg-white shadow-xs rounded-lg overflow-hidden'>
             <div className='divide-y divide-gray-200'>
               {ignoredPRs.map(prInfo => (
                 <IgnoredPRItem

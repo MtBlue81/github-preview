@@ -12,11 +12,11 @@
     "src-tauri/**",
     "**/*.test.{ts,tsx}",
     "**/*.spec.{ts,tsx}",
-    "vite.config.ts",
-    "tailwind.config.js",
-    "postcss.config.js"
+    "vite.config.ts"
   ],
-  "ignoreDependencies": [],
+  "ignoreDependencies": [
+    "tailwindcss"
+  ],
   "ignoreExportsUsedInFile": true,
   "webpack": false,
   "typescript": {

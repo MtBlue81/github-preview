@@ -391,7 +391,7 @@ export function PullRequestsPage() {
         }`}
       >
         <button
-          className='w-full text-left block px-4 py-3 border-b last:border-b-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset hover:bg-gray-50'
+          className='w-full text-left block px-4 py-3 border-b border-gray-200 last:border-b-0 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-inset hover:bg-gray-50'
           onClick={async e => {
             // cmd/ctrl + click で外部ブラウザで開く
             if (e.metaKey || e.ctrlKey) {
@@ -416,7 +416,7 @@ export function PullRequestsPage() {
               <div className='flex items-center gap-2'>
                 {isItemUnread && (
                   <span
-                    className='w-2 h-2 bg-blue-500 rounded-full flex-shrink-0'
+                    className='w-2 h-2 bg-blue-500 rounded-full shrink-0'
                     title='未読'
                   ></span>
                 )}
@@ -427,7 +427,7 @@ export function PullRequestsPage() {
                 )}
                 {pr.mergeable === 'CONFLICTING' && (
                   <span
-                    className='text-red-500 flex-shrink-0'
+                    className='text-red-500 shrink-0'
                     title='マージコンフリクトあり'
                   >
                     ⚠️
@@ -484,7 +484,7 @@ export function PullRequestsPage() {
                 </span>
               </div>
             </div>
-            <div className='ml-2 flex-shrink-0'>
+            <div className='ml-2 shrink-0'>
               {pr.reviewDecision === 'APPROVED' && (
                 <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800'>
                   Approved
@@ -579,8 +579,8 @@ export function PullRequestsPage() {
           </div>
         </div>
 
-        <div className='bg-white shadow-sm rounded-lg overflow-hidden'>
-          <div className='px-4 py-3 bg-gray-50 border-b flex items-center justify-between'>
+        <div className='bg-white shadow-xs rounded-lg overflow-hidden'>
+          <div className='px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between'>
             <h2 className='text-sm font-medium text-gray-900'>
               未読 {unreadCount} / {allPRsWithCategories.length}件
             </h2>
