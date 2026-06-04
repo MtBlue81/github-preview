@@ -1,6 +1,22 @@
-import { gql } from '@apollo/client';
+import { gql, TypedDocumentNode } from '@apollo/client';
+import type {
+  PullRequest,
+  PullRequestDetail,
+  RateLimit,
+} from '../types/github';
 
-export const GET_VIEWER = gql`
+interface GetViewerData {
+  viewer: {
+    login: string;
+    name: string;
+    avatarUrl: string;
+  };
+}
+
+export const GET_VIEWER: TypedDocumentNode<
+  GetViewerData,
+  Record<string, never>
+> = gql`
   query GetViewer {
     viewer {
       login
@@ -10,7 +26,33 @@ export const GET_VIEWER = gql`
   }
 `;
 
-export const GET_ALL_PULL_REQUESTS = gql`
+interface PullRequestSearchResult {
+  nodes: Array<PullRequest | null> | null;
+}
+
+interface GetAllPullRequestsData {
+  rateLimit: RateLimit | null;
+  authored: PullRequestSearchResult;
+  assigned: PullRequestSearchResult;
+  mentioned: PullRequestSearchResult;
+  reviewRequested: PullRequestSearchResult;
+  reviewed: PullRequestSearchResult;
+  commented: PullRequestSearchResult;
+}
+
+interface GetAllPullRequestsVariables {
+  authorQuery: string;
+  assigneeQuery: string;
+  mentionsQuery: string;
+  reviewRequestedQuery: string;
+  reviewedQuery: string;
+  commentedQuery: string;
+}
+
+export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
+  GetAllPullRequestsData,
+  GetAllPullRequestsVariables
+> = gql`
   query GetAllPullRequests(
     $authorQuery: String!
     $assigneeQuery: String!
@@ -429,7 +471,24 @@ export const GET_ALL_PULL_REQUESTS = gql`
   }
 `;
 
-export const GET_PULL_REQUEST_DETAIL = gql`
+interface GetPullRequestDetailData {
+  repository: {
+    owner: { login: string };
+    name: string;
+    pullRequest: PullRequestDetail | null;
+  } | null;
+}
+
+interface GetPullRequestDetailVariables {
+  owner: string;
+  repo: string;
+  number: number;
+}
+
+export const GET_PULL_REQUEST_DETAIL: TypedDocumentNode<
+  GetPullRequestDetailData,
+  GetPullRequestDetailVariables
+> = gql`
   query GetPullRequestDetail($owner: String!, $repo: String!, $number: Int!) {
     repository(owner: $owner, name: $repo) {
       owner {

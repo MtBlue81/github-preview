@@ -4,7 +4,7 @@ import {
   Navigate,
   Outlet,
 } from 'react-router-dom';
-import { ApolloProvider } from '@apollo/client';
+import { ApolloProvider } from '@apollo/client/react';
 import { LoginPage } from './pages/LoginPage';
 import { PullRequestsPage } from './pages/PullRequestsPage';
 import { IgnoredPRsPage } from './pages/IgnoredPRsPage';

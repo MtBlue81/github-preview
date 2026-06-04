@@ -1,7 +1,8 @@
 import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { MockedProvider, MockedResponse } from '@apollo/client/testing';
+import { MockedProvider } from '@apollo/client/testing/react';
+import type { MockedResponse } from '@apollo/client/testing';
 
 // テスト用のApollo Clientプロバイダーラッパー
 interface TestProvidersProps {
@@ -12,9 +13,7 @@ interface TestProvidersProps {
 function TestProviders({ children, mocks = [] }: TestProvidersProps) {
   return (
     <BrowserRouter>
-      <MockedProvider mocks={mocks} addTypename={false}>
-        {children}
-      </MockedProvider>
+      <MockedProvider mocks={mocks}>{children}</MockedProvider>
     </BrowserRouter>
   );
 }
