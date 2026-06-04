@@ -46,7 +46,7 @@
       "frameworks": [],
       "minimumSystemVersion": "10.15",
       "exceptionDomain": "localhost",
-      "signingIdentity": null,
+      "signingIdentity": "-",
       "providerShortName": null,
       "entitlements": null
     },

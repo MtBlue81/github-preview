@@ -13,16 +13,7 @@ PR 統合一覧 (作成・アサイン・メンション・レビュー依頼・
 
 1. [Releases](../../releases) ページから最新の `.dmg` をダウンロード
 2. `.dmg` をマウントし、`GitHub PR Preview.app` を `Applications` フォルダにドラッグ
-3. **未署名アプリのため、初回起動には次のいずれかの操作が必要**:
-
-   **方法A**: Finder で `Applications/GitHub PR Preview.app` を **右クリック → 開く** → 警告ダイアログで再度「開く」
-
-   **方法B**: ターミナルで quarantine 属性を外す
-   ```sh
-   xattr -d com.apple.quarantine "/Applications/GitHub PR Preview.app"
-   ```
-
-   2回目以降は通常通りダブルクリックで起動できる。
+3. 初回起動時に警告が出たら閉じて、**システム設定 → プライバシーとセキュリティ** 最下部の「このまま開く」をクリック (2回目以降は通常通り起動できる)
 
 ## セットアップ
 
