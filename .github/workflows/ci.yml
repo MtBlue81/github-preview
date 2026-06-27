@@ -17,7 +17,7 @@ jobs:
     name: Frontend (lint / test / build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
@@ -39,7 +39,7 @@ jobs:
     name: Rust (cargo check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Tauri 2 system dependencies
         run: |
