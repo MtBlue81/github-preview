@@ -36,11 +36,11 @@
     "knip:fix": "knip --fix"
   },
   "dependencies": {
-    "@apollo/client": "4.2.3",
+    "@apollo/client": "4.2.5",
     "@tauri-apps/api": "2.11.1",
     "@tauri-apps/plugin-opener": "^2.0.1",
     "date-fns": "4.4.0",
-    "graphql": "17.0.1",
+    "graphql": "17.0.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "7.18.0",
