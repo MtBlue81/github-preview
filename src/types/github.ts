@@ -21,6 +21,14 @@ export interface CheckRun {
     | 'TIMED_OUT'
     | null;
   detailsUrl?: string;
+  startedAt?: string | null;
+  checkSuite?: {
+    workflowRun?: {
+      workflow: {
+        name: string;
+      };
+    } | null;
+  } | null;
 }
 
 export interface StatusContext {

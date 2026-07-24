@@ -1,16 +1,17 @@
 import { StatusCheckRollup, StatusCheckContext } from '../types/github';
+import { summarizeCIStatus } from '../lib/ciStatus';
 
 interface CIStatusIconProps {
   statusCheckRollup?: StatusCheckRollup | null;
 }
 
 export function CIStatusIcon({ statusCheckRollup }: CIStatusIconProps) {
-  if (!statusCheckRollup) {
+  const summary = summarizeCIStatus(statusCheckRollup);
+  if (!summary) {
     return null;
   }
 
-  const { state, contexts } = statusCheckRollup;
-  const contextNodes = contexts?.nodes || [];
+  const { state, contexts: contextNodes } = summary;
 
   // ステータスに応じた色とアイコンを決定
   const getStatusColor = () => {
