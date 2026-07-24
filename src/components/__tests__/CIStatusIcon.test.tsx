@@ -236,6 +236,51 @@ describe('CIStatusIcon', () => {
       expect(icon).toHaveClass('text-green-600');
     });
 
+    it('rollupがFAILUREでも同名checkの最新runが成功していれば緑色で表示する', () => {
+      // 実例: ClusterONE#66707 の pr-lint（再トリガーで古い失敗runがコミットに残る）
+      const statusCheckRollup: StatusCheckRollup = {
+        state: 'FAILURE',
+        contexts: {
+          nodes: [
+            {
+              __typename: 'CheckRun',
+              id: 'check1',
+              name: 'pr-lint',
+              status: 'COMPLETED',
+              conclusion: 'FAILURE',
+              startedAt: '2026-07-24T00:03:05Z',
+              checkSuite: { workflowRun: { workflow: { name: 'PR lint' } } },
+            },
+            {
+              __typename: 'CheckRun',
+              id: 'check2',
+              name: 'pr-lint',
+              status: 'COMPLETED',
+              conclusion: 'SUCCESS',
+              startedAt: '2026-07-24T00:08:20Z',
+              checkSuite: { workflowRun: { workflow: { name: 'PR lint' } } },
+            },
+            {
+              __typename: 'CheckRun',
+              id: 'check3',
+              name: 'lint',
+              status: 'COMPLETED',
+              conclusion: 'SUCCESS',
+              startedAt: '2026-07-24T00:00:00Z',
+              checkSuite: { workflowRun: { workflow: { name: 'CI' } } },
+            },
+          ],
+        },
+      };
+
+      render(<CIStatusIcon statusCheckRollup={statusCheckRollup} />);
+
+      // dedup後: pr-lint(最新SUCCESS) + lint(SUCCESS) の2件
+      const icon = screen.getByTitle('2 passed');
+      expect(icon).toBeInTheDocument();
+      expect(icon).toHaveClass('text-green-600');
+    });
+
     it('contexts.nodesが空配列でもアイコンは表示される', () => {
       const statusCheckRollup: StatusCheckRollup = {
         state: 'SUCCESS',

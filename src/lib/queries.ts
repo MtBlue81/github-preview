@@ -96,7 +96,7 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
               commit {
                 statusCheckRollup {
                   state
-                  contexts(first: 10) {
+                  contexts(first: 100) {
                     nodes {
                       __typename
                       ... on CheckRun {
@@ -105,6 +105,14 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
                         status
                         conclusion
                         detailsUrl
+                        startedAt
+                        checkSuite {
+                          workflowRun {
+                            workflow {
+                              name
+                            }
+                          }
+                        }
                       }
                       ... on StatusContext {
                         id
@@ -162,7 +170,7 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
               commit {
                 statusCheckRollup {
                   state
-                  contexts(first: 10) {
+                  contexts(first: 100) {
                     nodes {
                       __typename
                       ... on CheckRun {
@@ -171,6 +179,14 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
                         status
                         conclusion
                         detailsUrl
+                        startedAt
+                        checkSuite {
+                          workflowRun {
+                            workflow {
+                              name
+                            }
+                          }
+                        }
                       }
                       ... on StatusContext {
                         id
@@ -228,7 +244,7 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
               commit {
                 statusCheckRollup {
                   state
-                  contexts(first: 10) {
+                  contexts(first: 100) {
                     nodes {
                       __typename
                       ... on CheckRun {
@@ -237,6 +253,14 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
                         status
                         conclusion
                         detailsUrl
+                        startedAt
+                        checkSuite {
+                          workflowRun {
+                            workflow {
+                              name
+                            }
+                          }
+                        }
                       }
                       ... on StatusContext {
                         id
@@ -298,7 +322,7 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
               commit {
                 statusCheckRollup {
                   state
-                  contexts(first: 10) {
+                  contexts(first: 100) {
                     nodes {
                       __typename
                       ... on CheckRun {
@@ -307,6 +331,14 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
                         status
                         conclusion
                         detailsUrl
+                        startedAt
+                        checkSuite {
+                          workflowRun {
+                            workflow {
+                              name
+                            }
+                          }
+                        }
                       }
                       ... on StatusContext {
                         id
@@ -364,7 +396,7 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
               commit {
                 statusCheckRollup {
                   state
-                  contexts(first: 10) {
+                  contexts(first: 100) {
                     nodes {
                       __typename
                       ... on CheckRun {
@@ -373,6 +405,14 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
                         status
                         conclusion
                         detailsUrl
+                        startedAt
+                        checkSuite {
+                          workflowRun {
+                            workflow {
+                              name
+                            }
+                          }
+                        }
                       }
                       ... on StatusContext {
                         id
@@ -430,7 +470,7 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
               commit {
                 statusCheckRollup {
                   state
-                  contexts(first: 10) {
+                  contexts(first: 100) {
                     nodes {
                       __typename
                       ... on CheckRun {
@@ -439,6 +479,14 @@ export const GET_ALL_PULL_REQUESTS: TypedDocumentNode<
                         status
                         conclusion
                         detailsUrl
+                        startedAt
+                        checkSuite {
+                          workflowRun {
+                            workflow {
+                              name
+                            }
+                          }
+                        }
                       }
                       ... on StatusContext {
                         id
