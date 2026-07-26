@@ -107,11 +107,7 @@ export interface ReviewNode {
     avatarUrl: string;
   };
   state:
-    | 'PENDING'
-    | 'COMMENTED'
-    | 'APPROVED'
-    | 'CHANGES_REQUESTED'
-    | 'DISMISSED';
+    'PENDING' | 'COMMENTED' | 'APPROVED' | 'CHANGES_REQUESTED' | 'DISMISSED';
   body: string;
   createdAt: string;
 }

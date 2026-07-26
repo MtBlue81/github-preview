@@ -1,0 +1,9 @@
+allowBuilds:
+  # binary の取得・生成に postinstall が必要
+  esbuild: true
+
+overrides:
+  semver: ^7.7.4
+
+autoInstallPeers: true
+trustPolicy: no-downgrade
