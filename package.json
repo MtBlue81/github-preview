@@ -8,14 +8,6 @@
     "node": ">=24",
     "pnpm": ">=10"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ],
-    "overrides": {
-      "semver": "^7.7.4"
-    }
-  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
