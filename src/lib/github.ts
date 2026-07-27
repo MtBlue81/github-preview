@@ -14,6 +14,59 @@ import { setContext } from '@apollo/client/link/context';
 import { invoke } from '@tauri-apps/api/core';
 import { useAuthStore } from '../stores/authStore';
 
+// graphql_request コマンド (src-tauri/src/lib.rs の RequestError) が返すエラー。
+// メッセージ文字列ではなく kind / status で判定することで、
+// h2 や hyper の文言変更でリトライ判定が黙って壊れるのを防ぐ
+type RequestErrorKind = 'timeout' | 'transport' | 'http' | 'client';
+
+type RequestErrorPayload = {
+  kind: RequestErrorKind;
+  message: string;
+  status?: number;
+};
+
+const REQUEST_ERROR_KINDS: readonly string[] = [
+  'timeout',
+  'transport',
+  'http',
+  'client',
+];
+
+const isRequestErrorPayload = (
+  value: unknown
+): value is RequestErrorPayload => {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as Partial<RequestErrorPayload>;
+  return (
+    typeof candidate.message === 'string' &&
+    typeof candidate.kind === 'string' &&
+    REQUEST_ERROR_KINDS.includes(candidate.kind)
+  );
+};
+
+class GraphQLRequestError extends Error {
+  readonly kind: RequestErrorKind;
+  readonly status?: number;
+
+  constructor(payload: RequestErrorPayload) {
+    super(payload.message, { cause: payload });
+    this.name = 'GraphQLRequestError';
+    this.kind = payload.kind;
+    this.status = payload.status;
+  }
+}
+
+// Apollo がエラーを包み直すケースに備えて cause も辿る
+const readRequestError = (error: unknown): RequestErrorPayload | null => {
+  if (error instanceof GraphQLRequestError) {
+    return { kind: error.kind, message: error.message, status: error.status };
+  }
+  if (isRequestErrorPayload(error)) return error;
+  const cause = (error as { cause?: unknown } | null | undefined)?.cause;
+  if (isRequestErrorPayload(cause)) return cause;
+  return null;
+};
+
 // Tauriカスタムコマンドを使用したfetch（CORSを回避）
 const fetchWithTauri = async (
   uri: RequestInfo | URL,
@@ -51,6 +104,9 @@ const fetchWithTauri = async (
     });
   } catch (error) {
     console.error('[Tauri HTTP] Fetch error:', error);
+    if (isRequestErrorPayload(error)) {
+      throw new GraphQLRequestError(error);
+    }
     throw new Error(String(error), { cause: error });
   }
 };
@@ -106,22 +162,46 @@ const errorLink = onError(({ error, operation, forward }) => {
   return;
 });
 
+const RETRYABLE_HTTP_STATUS = new Set([502, 503, 504]);
+
 // リトライ可能なネットワークエラーかどうかを判定
 const isRetryableNetworkError = (error: Error): boolean => {
+  const requestError = readRequestError(error);
+  if (requestError) {
+    switch (requestError.kind) {
+      // GitHub 側が h2 ストリームを切った場合などが transport。
+      // 接続の使い回しで避けられないため、リトライで吸収する
+      case 'transport':
+      case 'timeout':
+        return true;
+      case 'http':
+        return (
+          requestError.status !== undefined &&
+          RETRYABLE_HTTP_STATUS.has(requestError.status)
+        );
+      case 'client':
+        return false;
+    }
+  }
+
+  // graphql_request を経由しないエラー (IPC 自体の失敗など) は文字列で判定するしかない
   const message = error.message || '';
   return (
     error.name === 'AbortError' ||
     message.includes('Failed to fetch') ||
     message.includes('Network request failed') ||
-    message.includes('timeout') ||
-    message.includes('HTTP 502') ||
-    message.includes('HTTP 503') ||
-    message.includes('HTTP 504') ||
-    message.includes('Bad Gateway') ||
-    message.includes('Service Unavailable') ||
-    message.includes('Gateway Timeout')
+    message.includes('timeout')
   );
 };
+
+// mutation はサーバ側で実行済みの可能性があるためリトライしない。
+// transport エラーはボディ受信中にも起きるので、再送すると二重実行になる
+const isMutation = (operation: ApolloLink.Operation): boolean =>
+  operation.query.definitions.some(
+    definition =>
+      definition.kind === 'OperationDefinition' &&
+      definition.operation === 'mutation'
+  );
 
 // リトライリンク（ネットワークエラー時に自動リトライ）
 const retryLink = new RetryLink({
@@ -132,8 +212,9 @@ const retryLink = new RetryLink({
   },
   attempts: {
     max: 3,
-    retryIf: error => {
+    retryIf: (error, operation) => {
       if (!error) return false;
+      if (isMutation(operation)) return false;
       const shouldRetry = isRetryableNetworkError(error);
       if (shouldRetry) {
         console.log(
