@@ -7,3 +7,9 @@ overrides:
 
 autoInstallPeers: true
 trustPolicy: no-downgrade
+
+# renovate の minimumReleaseAge は direct dependency にしか効かず、
+# lockFileMaintenance のように package manager が解決する更新には効かない。
+# pnpm 側にも同じ制約を置くことで、推移的依存も含めて age を担保する。
+# 単位は分 (4320 = 3日)。renovate の共有設定の "3 days" と揃えている
+minimumReleaseAge: 4320
