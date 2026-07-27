@@ -67,6 +67,38 @@ const readRequestError = (error: unknown): RequestErrorPayload | null => {
   return null;
 };
 
+// UI がエラーの見せ方を決めるための分類。
+// auth はリトライしても直らないので画面を止める。
+// transient は自然回復しうるので一覧を出したまま通知する
+export type AppErrorKind = 'auth' | 'transient' | 'unknown';
+
+// GitHub は secondary rate limit / abuse detection で 403 と 429 を返す。
+// これを auth に倒すと一時的な流量制限でも画面が止まり、
+// かつ不要なトークン再発行をユーザーに促してしまう
+const TRANSIENT_HTTP_STATUS = new Set([403, 429]);
+
+export const classifyError = (error: unknown): AppErrorKind => {
+  const requestError = readRequestError(error);
+  if (!requestError) return 'unknown';
+
+  switch (requestError.kind) {
+    case 'timeout':
+    case 'transport':
+      return 'transient';
+    case 'http': {
+      const { status } = requestError;
+      if (status === undefined) return 'unknown';
+      if (status === 401) return 'auth';
+      if (status >= 500 || TRANSIENT_HTTP_STATUS.has(status)) {
+        return 'transient';
+      }
+      return 'unknown';
+    }
+    case 'client':
+      return 'unknown';
+  }
+};
+
 // Tauriカスタムコマンドを使用したfetch（CORSを回避）
 const fetchWithTauri = async (
   uri: RequestInfo | URL,

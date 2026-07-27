@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mockIPC, clearMocks } from '@tauri-apps/api/mocks';
 import { CombinedGraphQLErrors, gql } from '@apollo/client';
-import { githubClient, createAuthTestClient } from '../github';
+import { githubClient, createAuthTestClient, classifyError } from '../github';
 import { GET_VIEWER } from '../queries';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -305,6 +305,99 @@ describe('github (Apollo Client + Tauri invoke 連携)', () => {
       expect(last?.data?.viewer.login).toBe('testuser');
 
       subscription.unsubscribe();
+    });
+  });
+
+  describe('classifyError', () => {
+    it('401 は auth (トークン失効なのでリトライしても直らない)', () => {
+      expect(
+        classifyError({ kind: 'http', message: 'Unauthorized', status: 401 })
+      ).toBe('auth');
+    });
+
+    // GitHub は secondary rate limit で 403 / 429 を返す。
+    // これを auth 扱いにすると一時的な流量制限で作業がブロックされ、
+    // かつ不要なトークン再発行をユーザーに促してしまう
+    it('403 は auth ではなく transient', () => {
+      expect(
+        classifyError({ kind: 'http', message: 'Forbidden', status: 403 })
+      ).toBe('transient');
+    });
+
+    it('429 は transient', () => {
+      expect(
+        classifyError({
+          kind: 'http',
+          message: 'Too Many Requests',
+          status: 429,
+        })
+      ).toBe('transient');
+    });
+
+    it('5xx は transient', () => {
+      expect(
+        classifyError({ kind: 'http', message: 'Bad Gateway', status: 502 })
+      ).toBe('transient');
+      expect(
+        classifyError({ kind: 'http', message: 'Server Error', status: 500 })
+      ).toBe('transient');
+    });
+
+    it('404 のような回復しない 4xx は unknown', () => {
+      expect(
+        classifyError({ kind: 'http', message: 'Not Found', status: 404 })
+      ).toBe('unknown');
+    });
+
+    it('timeout と transport は transient', () => {
+      expect(classifyError({ kind: 'timeout', message: 'timed out' })).toBe(
+        'transient'
+      );
+      expect(classifyError(TRANSPORT_ERROR)).toBe('transient');
+    });
+
+    it('client は unknown', () => {
+      expect(classifyError({ kind: 'client', message: 'invoke failed' })).toBe(
+        'unknown'
+      );
+    });
+
+    it('cause チェーン経由の payload も分類できる', () => {
+      const wrapped = new Error('wrapped', {
+        cause: { kind: 'http', message: 'Unauthorized', status: 401 },
+      });
+      expect(classifyError(wrapped)).toBe('auth');
+    });
+
+    it('コントラクト外のエラーは unknown', () => {
+      expect(classifyError(new Error('boom'))).toBe('unknown');
+      expect(classifyError(null)).toBe('unknown');
+    });
+
+    it('Apollo 経由で実際に飛んできた 401 を auth と分類する', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      useAuthStore.getState().setToken('test-token');
+
+      mockIPC(cmd => {
+        if (cmd === 'graphql_request') {
+          return Promise.reject({
+            kind: 'http',
+            message: 'HTTP 401: Bad credentials',
+            status: 401,
+          });
+        }
+        return Promise.resolve();
+      });
+
+      const caught = await githubClient
+        .query({ query: GET_VIEWER, fetchPolicy: 'no-cache' })
+        .then(() => null)
+        .catch((e: unknown) => e);
+
+      expect(caught).not.toBeNull();
+      expect(classifyError(caught)).toBe('auth');
+
+      vi.restoreAllMocks();
     });
   });
 });
