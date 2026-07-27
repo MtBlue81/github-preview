@@ -1,9 +1,35 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mockIPC, clearMocks } from '@tauri-apps/api/mocks';
-import { CombinedGraphQLErrors } from '@apollo/client';
+import { CombinedGraphQLErrors, gql } from '@apollo/client';
 import { githubClient, createAuthTestClient } from '../github';
 import { GET_VIEWER } from '../queries';
 import { useAuthStore } from '../../stores/authStore';
+
+const VIEWER_RESPONSE = JSON.stringify({
+  data: {
+    viewer: {
+      login: 'testuser',
+      name: 'Test User',
+      avatarUrl: 'https://example.com/avatar.png',
+    },
+  },
+});
+
+// GitHub が h2 ストリームを RST_STREAM(CANCEL) で切ったときに
+// graphql_request が返すエラー
+const TRANSPORT_ERROR = {
+  kind: 'transport',
+  message:
+    'error decoding response body for url (https://api.github.com/graphql): request or response body error: error reading a body from connection: stream error received: stream no longer needed',
+};
+
+const TEST_MUTATION = gql`
+  mutation TestMutation {
+    addComment(input: { subjectId: "x", body: "y" }) {
+      clientMutationId
+    }
+  }
+`;
 
 describe('github (Apollo Client + Tauri invoke 連携)', () => {
   beforeEach(() => {
@@ -131,6 +157,63 @@ describe('github (Apollo Client + Tauri invoke 連携)', () => {
       ).rejects.toThrow();
 
       errorSpy.mockRestore();
+    });
+  });
+
+  describe('transport エラーのリトライ', () => {
+    let errorSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('query は transport エラーで再試行され、2回目で成功する', async () => {
+      useAuthStore.getState().setToken('test-token');
+
+      let attempts = 0;
+      mockIPC((cmd, _args) => {
+        if (cmd === 'graphql_request') {
+          attempts += 1;
+          if (attempts === 1) {
+            return Promise.reject(TRANSPORT_ERROR);
+          }
+          return Promise.resolve(VIEWER_RESPONSE);
+        }
+        return Promise.resolve();
+      });
+
+      const result = await githubClient.query({
+        query: GET_VIEWER,
+        fetchPolicy: 'no-cache',
+      });
+
+      expect(attempts).toBe(2);
+      expect(result.data?.viewer.login).toBe('testuser');
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('mutation は transport エラーでも再試行しない (二重実行を避ける)', async () => {
+      useAuthStore.getState().setToken('test-token');
+
+      let attempts = 0;
+      mockIPC((cmd, _args) => {
+        if (cmd === 'graphql_request') {
+          attempts += 1;
+          return Promise.reject(TRANSPORT_ERROR);
+        }
+        return Promise.resolve();
+      });
+
+      await expect(
+        githubClient.mutate({ mutation: TEST_MUTATION })
+      ).rejects.toThrow();
+
+      expect(attempts).toBe(1);
     });
   });
 

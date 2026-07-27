@@ -1,3 +1,4 @@
+use serde::Serialize;
 use tauri_plugin_notification::NotificationExt;
 use std::collections::HashMap;
 use std::error::Error as StdError;
@@ -10,9 +11,67 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const READ_TIMEOUT: Duration = Duration::from_secs(30);
 const TOTAL_TIMEOUT: Duration = Duration::from_secs(120);
 
+// アイドル中も ping で h2 接続の生死を確認する。
+// これがないと、サーバ側が既に回収した接続をプールから掴んでしまい、
+// 実リクエストで RST_STREAM(CANCEL) を受けるまで死んでいると分からない。
+// reqwest のデフォルトは keep-alive 無効 / pool_idle_timeout 90秒で、
+// ポーリング間隔 (一覧60秒・詳細30秒) はその内側に収まってしまう。
+const H2_KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(30);
+const H2_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
+
+// フロントは kind でリトライ可否を判断する。
+// メッセージ文字列を突き合わせる方式だと、h2 やhyperの文言変更で
+// 判定が黙って壊れる
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum ErrorKind {
+    Timeout,
+    Transport,
+    Http,
+    Client,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+struct RequestError {
+    kind: ErrorKind,
+    message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    status: Option<u16>,
+}
+
+impl RequestError {
+    fn client(message: String) -> Self {
+        Self {
+            kind: ErrorKind::Client,
+            message,
+            status: None,
+        }
+    }
+
+    fn transport(error: &dyn StdError, is_timeout: bool) -> Self {
+        Self {
+            kind: if is_timeout {
+                ErrorKind::Timeout
+            } else {
+                ErrorKind::Transport
+            },
+            message: format_transport_error(error, is_timeout),
+            status: None,
+        }
+    }
+
+    fn http(status: u16, body: &str) -> Self {
+        Self {
+            kind: ErrorKind::Http,
+            message: format!("HTTP {}: {}", status, body),
+            status: Some(status),
+        }
+    }
+}
+
 // reqwest::Client はコネクションプールを内包するため、リクエストごとに作ると
 // 毎回TLSハンドシェイクからやり直しになる
-fn http_client() -> Result<&'static reqwest::Client, String> {
+fn http_client() -> Result<&'static reqwest::Client, RequestError> {
     static CLIENT: OnceLock<Result<reqwest::Client, String>> = OnceLock::new();
 
     CLIENT
@@ -21,11 +80,14 @@ fn http_client() -> Result<&'static reqwest::Client, String> {
                 .connect_timeout(CONNECT_TIMEOUT)
                 .read_timeout(READ_TIMEOUT)
                 .timeout(TOTAL_TIMEOUT)
+                .http2_keep_alive_interval(H2_KEEP_ALIVE_INTERVAL)
+                .http2_keep_alive_timeout(H2_KEEP_ALIVE_TIMEOUT)
+                .http2_keep_alive_while_idle(true)
                 .build()
                 .map_err(|e| e.to_string())
         })
         .as_ref()
-        .map_err(|e| e.clone())
+        .map_err(|e| RequestError::client(e.clone()))
 }
 
 // reqwest 0.12以降のDisplayはsourceを出力しないため、辿って連結する。
@@ -55,7 +117,7 @@ async fn graphql_request(
     url: String,
     body: String,
     headers: HashMap<String, String>,
-) -> Result<String, String> {
+) -> Result<String, RequestError> {
     let client = http_client()?;
 
     let mut request = client.post(&url);
@@ -71,18 +133,18 @@ async fn graphql_request(
     let response = request
         .send()
         .await
-        .map_err(|e| format_transport_error(&e, e.is_timeout()))?;
+        .map_err(|e| RequestError::transport(&e, e.is_timeout()))?;
 
     let status = response.status();
     let text = response
         .text()
         .await
-        .map_err(|e| format_transport_error(&e, e.is_timeout()))?;
+        .map_err(|e| RequestError::transport(&e, e.is_timeout()))?;
 
     if status.is_success() {
         Ok(text)
     } else {
-        Err(format!("HTTP {}: {}", status.as_u16(), text))
+        Err(RequestError::http(status.as_u16(), &text))
     }
 }
 
@@ -195,6 +257,61 @@ mod tests {
         assert_eq!(
             format_transport_error(&error, true),
             "Request timeout: error decoding response body: operation timed out"
+        );
+    }
+
+    #[test]
+    fn classifies_non_timeout_transport_failures() {
+        let error = TestError::new(
+            "error decoding response body",
+            Some(TestError::new(
+                "stream error received: stream no longer needed",
+                None,
+            )),
+        );
+
+        let request_error = RequestError::transport(&error, false);
+
+        assert_eq!(request_error.kind, ErrorKind::Transport);
+        assert_eq!(request_error.status, None);
+        assert_eq!(
+            request_error.message,
+            "error decoding response body: stream error received: stream no longer needed"
+        );
+    }
+
+    #[test]
+    fn classifies_timeouts_separately() {
+        let error = TestError::new("operation timed out", None);
+
+        assert_eq!(
+            RequestError::transport(&error, true).kind,
+            ErrorKind::Timeout
+        );
+    }
+
+    #[test]
+    fn keeps_status_on_http_errors() {
+        let request_error = RequestError::http(502, "Bad Gateway");
+
+        assert_eq!(request_error.kind, ErrorKind::Http);
+        assert_eq!(request_error.status, Some(502));
+        assert_eq!(request_error.message, "HTTP 502: Bad Gateway");
+    }
+
+    // フロントは kind / status を見てリトライ可否を決めるため、
+    // JSON の形はコントラクトとして固定する
+    #[test]
+    fn serializes_to_the_shape_the_frontend_expects() {
+        let transport = TestError::new("stream error received", None);
+
+        assert_eq!(
+            serde_json::to_string(&RequestError::transport(&transport, false)).unwrap(),
+            r#"{"kind":"transport","message":"stream error received"}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&RequestError::http(503, "nope")).unwrap(),
+            r#"{"kind":"http","message":"HTTP 503: nope","status":503}"#
         );
     }
 }

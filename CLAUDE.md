@@ -120,8 +120,11 @@ pnpm tauri build
 #### タイムアウト・リトライ
 - **タイムアウト**（Rust側で設定）: 接続10秒 / read 30秒 / 全体120秒
   - read タイムアウトは各read操作ごとにリセットされるため、巨大なレスポンスの配信中に切られない。全体タイムアウトはハードリミット
+- **HTTP/2 keep-alive**: アイドル中も30秒間隔で ping を打ち、死んだ接続をプールから排除する。reqwest のデフォルトは keep-alive 無効 / `pool_idle_timeout` 90秒で、ポーリング間隔（一覧60秒・詳細30秒）がその内側に収まるため、GitHub 側が回収済みの接続を掴んで `stream error received: stream no longer needed`（RST_STREAM CANCEL）を受けることがあった
 - **自動リトライ**: Apollo Client の RetryLink でネットワークエラー時に最大3回リトライ（1〜5秒間隔、ジッター付き）
+  - **mutation はリトライしない**: transport エラーはボディ受信中にも起きる＝サーバ側は実行済みの可能性があるため、再送すると二重実行になる
 - **エラーハンドリング**: Apollo Client の `onError` リンクでGraphQL/ネットワークエラーを詳細ログ出力
+- **エラーのコントラクト**: `graphql_request` は `{ kind, message, status? }` を返す（`kind`: `timeout` / `transport` / `http` / `client`）。フロントは `kind` と `status` でリトライ可否を判定する。メッセージ文字列で判定すると h2 / hyper の文言変更で判定が黙って壊れる
 - **エラー整形**: reqwest 0.12以降の `Display` は `source()` を出力しないため、`format_transport_error` で source chain を辿って連結する。これがないと `error decoding response body for url (...)` だけが残り、タイムアウトか接続断かを区別できない
 
 #### 実装ファイル
