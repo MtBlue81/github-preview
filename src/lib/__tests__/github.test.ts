@@ -309,6 +309,12 @@ describe('github (Apollo Client + Tauri invoke 連携)', () => {
   });
 
   describe('classifyError', () => {
+    it('http だが status を持たない場合は unknown', () => {
+      expect(classifyError({ kind: 'http', message: 'no status' })).toBe(
+        'unknown'
+      );
+    });
+
     it('401 は auth (トークン失効なのでリトライしても直らない)', () => {
       expect(
         classifyError({ kind: 'http', message: 'Unauthorized', status: 401 })
