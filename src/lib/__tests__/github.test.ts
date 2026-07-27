@@ -246,4 +246,65 @@ describe('github (Apollo Client + Tauri invoke 連携)', () => {
       expect(seenHeaders[0].authorization).toBe('bearer explicit-token');
     });
   });
+
+  // 本アプリの「エラー時も一覧を出し続ける」設計は、Apollo が
+  // ネットワークエラー時に前回の data を保持することに依存している。
+  // Apollo のバージョンアップで前提が壊れたら気付けるように固定する。
+  describe('ネットワークエラー時の data 保持 (設計前提の固定)', () => {
+    // client kind はリトライ対象外 (isRetryableNetworkError) なので
+    // RetryLink のバックオフを待たずにエラーが確定する
+    const CLIENT_ERROR = {
+      kind: 'client',
+      message: 'invoke failed',
+    };
+
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('refetch が失敗しても直前に取得した data は保持される', async () => {
+      let attempts = 0;
+      mockIPC(cmd => {
+        if (cmd === 'graphql_request') {
+          attempts += 1;
+          if (attempts === 1) {
+            return Promise.resolve(VIEWER_RESPONSE);
+          }
+          return Promise.reject(CLIENT_ERROR);
+        }
+        return Promise.resolve();
+      });
+
+      const client = createAuthTestClient('test-token');
+      const observable = client.watchQuery({
+        query: GET_VIEWER,
+        notifyOnNetworkStatusChange: true,
+      });
+
+      const results: Array<{
+        data?: { viewer: { login: string } };
+        error?: unknown;
+      }> = [];
+      const subscription = observable.subscribe(result => {
+        results.push(result as (typeof results)[number]);
+      });
+
+      await vi.waitFor(() => {
+        expect(results.at(-1)?.data?.viewer.login).toBe('testuser');
+      });
+
+      await expect(observable.refetch()).rejects.toThrow();
+
+      const last = results.at(-1);
+      expect(last?.error).toBeDefined();
+      expect(last?.data?.viewer.login).toBe('testuser');
+
+      subscription.unsubscribe();
+    });
+  });
 });
