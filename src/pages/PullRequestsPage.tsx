@@ -11,9 +11,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { Layout } from '../components/Layout';
 import { CIStatusIcon } from '../components/CIStatusIcon';
 import { FilterSettingsModal } from '../components/FilterSettingsModal';
+import { FetchErrorBanner } from '../components/FetchErrorBanner';
+import { classifyError, type AppErrorKind } from '../lib/github';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   deduplicatePullRequests,
   buildGitHubSearchQuery,
@@ -21,7 +23,7 @@ import {
 } from '../lib/prUtils';
 
 export function PullRequestsPage() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { isIgnored, addIgnoredPR, ignoredPRIds } = useIgnoreStore();
   const { isUnread, markAsRead, getUnreadCount } = useReadStatusStore();
   const { excludedLabels } = useFilterStore();
@@ -30,6 +32,11 @@ export function PullRequestsPage() {
   const [currentWebView, setCurrentWebView] = useState<WebviewWindow | null>(
     null
   );
+  const navigate = useNavigate();
+  const [fetchError, setFetchError] = useState<{
+    kind: AppErrorKind;
+    message: string;
+  } | null>(null);
 
   // 統合クエリで一度にすべてのPRを取得
   const username = user?.login || '';
@@ -53,6 +60,28 @@ export function PullRequestsPage() {
   const loading = allPullRequestsQuery.loading;
   const error = allPullRequestsQuery.error;
   const refetch = allPullRequestsQuery.refetch;
+
+  // Apollo はフェッチ開始時に error を一旦 undefined にするため、
+  // error をそのまま描画するとポーリングのたびに表示が消えてチラつく。
+  // 成功が確定したとき (エラー無し かつ ロード中でない) にだけクリアする
+  useEffect(() => {
+    if (error) {
+      setFetchError({ kind: classifyError(error), message: error.message });
+    } else if (!loading) {
+      setFetchError(null);
+    }
+  }, [error, loading]);
+
+  // 再試行の結果はバナー / 全画面表示そのものが伝えるため、
+  // reject は握りつぶして unhandled rejection を防ぐ
+  const handleRetry = () => {
+    void refetch().catch(() => {});
+  };
+
+  const handleReLogin = () => {
+    logout();
+    navigate('/login');
+  };
 
   const handleRefresh = async () => {
     console.log('[Refresh] handleRefresh called');
@@ -344,6 +373,34 @@ export function PullRequestsPage() {
     }
   };
 
+  if (
+    fetchError &&
+    (fetchError.kind === 'auth' || !allPullRequestsQuery.data)
+  ) {
+    const isAuth = fetchError.kind === 'auth';
+    return (
+      <Layout
+        loading={loading}
+        onRefresh={handleRefresh}
+        lastUpdated={lastUpdated}
+      >
+        <div className='flex flex-col items-center justify-center h-screen gap-4 px-8 text-center'>
+          <div className='text-red-600 break-words'>
+            {isAuth
+              ? 'GitHub の認証に失敗しました。トークンが失効している可能性があります。'
+              : `PR一覧の取得に失敗しました: ${fetchError.message}`}
+          </div>
+          <button
+            onClick={isAuth ? handleReLogin : handleRetry}
+            className='px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700'
+          >
+            {isAuth ? 'ログアウトして再ログイン' : '再試行'}
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+
   if (loading && allPRsWithCategories.length === 0) {
     return (
       <Layout
@@ -353,20 +410,6 @@ export function PullRequestsPage() {
       >
         <div className='flex items-center justify-center h-screen'>
           <div className='text-lg'>Loading pull requests...</div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout
-        loading={loading}
-        onRefresh={handleRefresh}
-        lastUpdated={lastUpdated}
-      >
-        <div className='flex items-center justify-center h-screen'>
-          <div className='text-red-600'>Error: {error.message}</div>
         </div>
       </Layout>
     );
@@ -578,6 +621,10 @@ export function PullRequestsPage() {
             </Link>
           </div>
         </div>
+
+        {fetchError && fetchError.kind !== 'auth' && (
+          <FetchErrorBanner kind={fetchError.kind} onRetry={handleRetry} />
+        )}
 
         <div className='bg-white shadow-xs rounded-lg overflow-hidden'>
           <div className='px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between'>

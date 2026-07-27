@@ -113,15 +113,19 @@ describe('PullRequestsPage', () => {
       expect(screen.getByText(/Loading pull requests/)).toBeInTheDocument();
     });
 
-    it('エラー状態が正しく表示される', () => {
-      // エラー状態をモック
+    it('データが無いままエラーになったら全画面エラーと再試行ボタンを出す', () => {
       (vi.mocked(mockQuery) as any).loading = false;
       (vi.mocked(mockQuery) as any).error = new Error('Network error');
       (vi.mocked(mockQuery) as any).data = null;
 
       render(<PullRequestsPage />);
 
-      expect(screen.getByText(/Error/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/PR一覧の取得に失敗しました/)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: '再試行' })
+      ).toBeInTheDocument();
     });
   });
 
@@ -188,6 +192,98 @@ describe('PullRequestsPage', () => {
       render(<PullRequestsPage />);
 
       expect(screen.getByText('該当するPRはありません')).toBeInTheDocument();
+    });
+  });
+
+  describe('エラー時の非ブロッキング表示', () => {
+    const dataWithPR = {
+      rateLimit: {
+        limit: 5000,
+        remaining: 4800,
+        used: 200,
+        cost: 1,
+        resetAt: '2024-01-01T01:00:00Z',
+      },
+      authored: { nodes: [mockPullRequest] },
+      assigned: { nodes: [] },
+      mentions: { nodes: [] },
+      reviewRequested: { nodes: [] },
+    };
+
+    it('データがあるエラーでは一覧を残してバナーを出す', () => {
+      (vi.mocked(mockQuery) as any).loading = false;
+      (vi.mocked(mockQuery) as any).error = {
+        kind: 'transport',
+        message: 'stream no longer needed',
+        name: 'GraphQLRequestError',
+      };
+      (vi.mocked(mockQuery) as any).data = dataWithPR;
+
+      render(<PullRequestsPage />);
+
+      expect(screen.getByText('Test PR Title')).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'PR一覧の更新に失敗しました'
+      );
+    });
+
+    it('401 はデータがあっても全画面にして再ログインへ誘導する', () => {
+      (vi.mocked(mockQuery) as any).loading = false;
+      (vi.mocked(mockQuery) as any).error = {
+        kind: 'http',
+        status: 401,
+        message: 'Bad credentials',
+        name: 'GraphQLRequestError',
+      };
+      (vi.mocked(mockQuery) as any).data = dataWithPR;
+
+      render(<PullRequestsPage />);
+
+      expect(screen.queryByText('Test PR Title')).not.toBeInTheDocument();
+      expect(screen.getByText(/認証に失敗しました/)).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'ログアウトして再ログイン' })
+      ).toBeInTheDocument();
+    });
+
+    // Apollo はポーリング開始時に error を一旦 undefined にする。
+    // バナーがそれで消えると毎分チラつくので、loading 中は保持する
+    it('ポーリング再開 (loading 中) でもバナーが消えない', () => {
+      (vi.mocked(mockQuery) as any).loading = false;
+      (vi.mocked(mockQuery) as any).error = {
+        kind: 'timeout',
+        message: 'timed out',
+        name: 'GraphQLRequestError',
+      };
+      (vi.mocked(mockQuery) as any).data = dataWithPR;
+
+      const { rerender } = render(<PullRequestsPage />);
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+
+      (vi.mocked(mockQuery) as any).loading = true;
+      (vi.mocked(mockQuery) as any).error = null;
+      rerender(<PullRequestsPage />);
+
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+    });
+
+    it('取得に成功したらバナーが消える', () => {
+      (vi.mocked(mockQuery) as any).loading = false;
+      (vi.mocked(mockQuery) as any).error = {
+        kind: 'timeout',
+        message: 'timed out',
+        name: 'GraphQLRequestError',
+      };
+      (vi.mocked(mockQuery) as any).data = dataWithPR;
+
+      const { rerender } = render(<PullRequestsPage />);
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+
+      (vi.mocked(mockQuery) as any).loading = false;
+      (vi.mocked(mockQuery) as any).error = null;
+      rerender(<PullRequestsPage />);
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
   });
 });
