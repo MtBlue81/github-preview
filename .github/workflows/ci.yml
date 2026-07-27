@@ -37,28 +37,19 @@ jobs:
 
   cargo-check:
     name: Rust (cargo check)
-    runs-on: ubuntu-latest
+    # release.yml と同じランナー / ターゲットで検証する。
+    # ubuntu では reqwest -> rustls -> aws-lc-sys の C ビルドが mac 向けに走らず、
+    # Cargo.lock 更新時に mac 固有のビルド失敗を取りこぼす
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install Tauri 2 system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libsoup-3.0-dev \
-            build-essential \
-            curl \
-            wget \
-            file
-
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          targets: aarch64-apple-darwin
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: src-tauri -> target
 
-      - run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+      - run: cargo check --manifest-path src-tauri/Cargo.toml --locked --target aarch64-apple-darwin
