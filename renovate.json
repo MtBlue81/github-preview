@@ -1,6 +1,9 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["github>MtBlue81/renovate-config"],
+  "lockFileMaintenance": {
+    "automerge": false
+  },
   "packageRules": [
     {
       "description": "Tauri JS パッケージ (@tauri-apps/*) をまとめて更新",
@@ -9,10 +12,9 @@
       "groupName": "tauri-apps (npm)"
     },
     {
-      "description": "Tauri Rust クレート (tauri / tauri-build / tauri-plugin-*) をまとめて更新",
+      "description": "cargo の更新は1 PR にまとめ、Cargo.lock を触る PR を並行させない",
       "matchManagers": ["cargo"],
-      "matchPackageNames": ["tauri", "tauri-build", "/^tauri-plugin-/"],
-      "groupName": "tauri (cargo)"
+      "groupName": "cargo"
     },
     {
       "description": "testing-library / vitest / happy-dom をまとめて更新",
