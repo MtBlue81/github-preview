@@ -115,11 +115,14 @@ pnpm tauri build
 - **実装**: `graphql_request` カスタムコマンドでRust側（reqwest）からGitHub APIを呼び出し
 - **理由**: WebViewからの直接fetchはCORS制限を受け、特に504エラー時にCORSヘッダーが欠落してエラー内容が取得できない問題があった
 - **User-Agent**: `GitHub-PR-Preview/0.1.0`（GitHub API必須ヘッダー）
+- **`reqwest::Client` は `OnceLock` で使い回す**: Client がコネクションプールを持つため、リクエストごとに生成するとTLSハンドシェイクからやり直しになる
 
 #### タイムアウト・リトライ
-- **タイムアウト**: 30秒（Rust側で設定）
+- **タイムアウト**（Rust側で設定）: 接続10秒 / read 30秒 / 全体120秒
+  - read タイムアウトは各read操作ごとにリセットされるため、巨大なレスポンスの配信中に切られない。全体タイムアウトはハードリミット
 - **自動リトライ**: Apollo Client の RetryLink でネットワークエラー時に最大3回リトライ（1〜5秒間隔、ジッター付き）
 - **エラーハンドリング**: Apollo Client の `onError` リンクでGraphQL/ネットワークエラーを詳細ログ出力
+- **エラー整形**: reqwest 0.12以降の `Display` は `source()` を出力しないため、`format_transport_error` で source chain を辿って連結する。これがないと `error decoding response body for url (...)` だけが残り、タイムアウトか接続断かを区別できない
 
 #### 実装ファイル
 - `src-tauri/src/lib.rs`: `graphql_request` カスタムコマンド（reqwest使用）
