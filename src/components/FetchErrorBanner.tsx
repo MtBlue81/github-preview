@@ -21,7 +21,7 @@ export function FetchErrorBanner({ kind, onRetry }: FetchErrorBannerProps) {
       <span aria-hidden='true' className='text-amber-600'>
         ⚠
       </span>
-      <p className='flex-1 text-sm text-amber-900 break-words'>
+      <p className='flex-1 min-w-0 text-sm text-amber-900 break-words'>
         {MESSAGES[kind]}
       </p>
       <button
