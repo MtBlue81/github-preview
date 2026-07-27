@@ -32,4 +32,10 @@ describe('FetchErrorBanner', () => {
 
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
+
+  it('disabled が true のとき再試行ボタンが押せない', () => {
+    render(<FetchErrorBanner kind='transient' onRetry={vi.fn()} disabled />);
+
+    expect(screen.getByRole('button', { name: '再試行' })).toBeDisabled();
+  });
 });

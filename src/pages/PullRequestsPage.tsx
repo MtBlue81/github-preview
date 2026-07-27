@@ -392,9 +392,14 @@ export function PullRequestsPage() {
           </div>
           <button
             onClick={isAuth ? handleReLogin : handleRetry}
-            className='px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700'
+            disabled={!isAuth && loading}
+            className='px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
           >
-            {isAuth ? 'ログアウトして再ログイン' : '再試行'}
+            {isAuth
+              ? 'ログアウトして再ログイン'
+              : loading
+                ? '再試行中...'
+                : '再試行'}
           </button>
         </div>
       </Layout>
@@ -623,7 +628,11 @@ export function PullRequestsPage() {
         </div>
 
         {fetchError && fetchError.kind !== 'auth' && (
-          <FetchErrorBanner kind={fetchError.kind} onRetry={handleRetry} />
+          <FetchErrorBanner
+            kind={fetchError.kind}
+            onRetry={handleRetry}
+            disabled={loading}
+          />
         )}
 
         <div className='bg-white shadow-xs rounded-lg overflow-hidden'>

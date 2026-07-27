@@ -1,10 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '../../test/utils';
+import userEvent from '@testing-library/user-event';
 import { PullRequestsPage } from '../PullRequestsPage';
 import { mockPullRequest, mockPullRequestWithConflict } from '../../test/utils';
 import { useAuthStore } from '../../stores/authStore';
 import { useIgnoreStore } from '../../stores/ignoreStore';
 import { useReadStatusStore } from '../../stores/readStatusStore';
+
+// useNavigate をスパイするための部分モック。BrowserRouter / Link 等はそのまま素通しする
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async importOriginal => ({
+  ...(await importOriginal<typeof import('react-router-dom')>()),
+  useNavigate: () => mockNavigate,
+}));
 
 // Storeをモック
 vi.mock('../../stores/authStore');
@@ -73,14 +81,16 @@ describe('PullRequestsPage', () => {
     name: 'Test User',
     avatarUrl: 'https://github.com/testuser.png',
   };
+  let mockLogout: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     // デフォルトのストアモック
+    mockLogout = vi.fn();
     (useAuthStore as any).mockReturnValue({
       user: mockUser,
-      logout: vi.fn(),
+      logout: mockLogout,
     });
 
     (useIgnoreStore as any).mockReturnValue({
@@ -265,6 +275,49 @@ describe('PullRequestsPage', () => {
       rerender(<PullRequestsPage />);
 
       expect(screen.getByRole('alert')).toBeInTheDocument();
+    });
+
+    it('全画面エラーの再試行ボタンをクリックしたら refetch が呼ばれる', async () => {
+      (vi.mocked(mockQuery) as any).loading = false;
+      (vi.mocked(mockQuery) as any).error = new Error('Network error');
+      (vi.mocked(mockQuery) as any).data = null;
+
+      render(<PullRequestsPage />);
+
+      await userEvent.click(screen.getByRole('button', { name: '再試行' }));
+
+      expect(mockQuery.refetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('全画面エラー中は再試行ボタンが disabled になり文言が変わる', () => {
+      (vi.mocked(mockQuery) as any).loading = true;
+      (vi.mocked(mockQuery) as any).error = new Error('Network error');
+      (vi.mocked(mockQuery) as any).data = null;
+
+      render(<PullRequestsPage />);
+
+      const button = screen.getByRole('button', { name: '再試行中...' });
+      expect(button).toBeDisabled();
+    });
+
+    it("auth エラーの「ログアウトして再ログイン」をクリックしたら logout と navigate('/login') が呼ばれる", async () => {
+      (vi.mocked(mockQuery) as any).loading = false;
+      (vi.mocked(mockQuery) as any).error = {
+        kind: 'http',
+        status: 401,
+        message: 'Bad credentials',
+        name: 'GraphQLRequestError',
+      };
+      (vi.mocked(mockQuery) as any).data = dataWithPR;
+
+      render(<PullRequestsPage />);
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'ログアウトして再ログイン' })
+      );
+
+      expect(mockLogout).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith('/login');
     });
 
     it('取得に成功したらバナーが消える', () => {

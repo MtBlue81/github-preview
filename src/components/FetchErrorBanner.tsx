@@ -3,6 +3,7 @@ import type { AppErrorKind } from '../lib/github';
 interface FetchErrorBannerProps {
   kind: Exclude<AppErrorKind, 'auth'>;
   onRetry: () => void;
+  disabled?: boolean;
 }
 
 const MESSAGES: Record<FetchErrorBannerProps['kind'], string> = {
@@ -12,7 +13,11 @@ const MESSAGES: Record<FetchErrorBannerProps['kind'], string> = {
     'PR一覧の更新に失敗しました。表示中の一覧は最後に取得できた内容です。',
 };
 
-export function FetchErrorBanner({ kind, onRetry }: FetchErrorBannerProps) {
+export function FetchErrorBanner({
+  kind,
+  onRetry,
+  disabled,
+}: FetchErrorBannerProps) {
   return (
     <div
       role='alert'
@@ -26,7 +31,8 @@ export function FetchErrorBanner({ kind, onRetry }: FetchErrorBannerProps) {
       </p>
       <button
         onClick={onRetry}
-        className='shrink-0 px-3 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700'
+        disabled={disabled}
+        className='shrink-0 px-3 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed'
       >
         再試行
       </button>
