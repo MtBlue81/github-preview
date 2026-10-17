@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { mockIPC, mockWindows, clearMocks } from '@tauri-apps/api/mocks';
 
