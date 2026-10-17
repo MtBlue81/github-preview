@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@apollo/client": "4.3.3",
-    "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/api": "2.12.3",
     "@tauri-apps/plugin-opener": "^2.0.1",
     "date-fns": "4.4.0",
     "graphql": "17.0.2",
@@ -42,7 +42,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@tailwindcss/vite": "4.3.3",
-    "@tauri-apps/cli": "2.11.4",
+    "@tauri-apps/cli": "2.12.2",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",
