@@ -11,7 +11,7 @@ Tauri + React + TypeScript + Tailwind CSSで構築されたMac用デスクトッ
 - **API**: GitHub GraphQL API
 - **認証**: GitHub Personal Access Token
 - **状態管理**: Zustand
-- **開発ツール**: ESLint（React Hooks対応）、Prettier
+- **開発ツール**: oxlint（React Hooks対応）、Prettier
 
 ## 実装済み機能
 

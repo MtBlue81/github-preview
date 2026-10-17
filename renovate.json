@@ -27,14 +27,8 @@
       "groupName": "testing"
     },
     {
-      "description": "ESLint / Prettier 系をまとめて更新",
-      "matchPackageNames": [
-        "eslint",
-        "/^eslint-/",
-        "/^@typescript-eslint//",
-        "typescript-eslint",
-        "prettier"
-      ],
+      "description": "oxlint / Prettier 系をまとめて更新",
+      "matchPackageNames": ["oxlint", "prettier"],
       "groupName": "linters"
     },
     {
